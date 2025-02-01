@@ -1,20 +1,20 @@
-# Product Requirements Document: Hoarder GUI
+# Product Requirements Document: Hoarder Client
 
 ## 1. Introduction
 
 ### 1.1. Purpose
 
-This document outlines the product requirements for the Hoarder GUI application, a cross-platform desktop client for the Hoarder bookmark management service. The Hoarder GUI aims to provide a user-friendly and performant interface for managing bookmarks, offering an alternative to the existing web interface.
+This document outlines the product requirements for the Hoarder Client application, a cross-platform desktop client for the Hoarder bookmark management service. The Hoarder Client aims to provide a user-friendly and performant interface for managing bookmarks, offering an alternative to the existing web interface.
 
 ### 1.2. App Overview
 
--   **Name:** Hoarder GUI
+-   **Name:** Hoarder Client
 -   **Description:** A cross-platform desktop application for managing bookmarks using the Hoarder API.
 -   **Tagline:** Your powerful and efficient desktop bookmark manager.
 
 ## 2. Target Audience
 
-The primary users of the Hoarder GUI are individuals who:
+The primary users of the Hoarder Client are individuals who:
 
 -   Have a large number of bookmarks.
 -   Use a bookmark manager to organize their bookmarks into lists.
