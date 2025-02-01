@@ -10,14 +10,94 @@
     <div id="app">
         <header>
             <h1>Hoarder Client</h1>
+            <div id="api-key-section">
+                <input type="text" id="api-key" placeholder="Enter your API key">
+                <button id="api-key-submit">Submit</button>
+                <div id="api-key-message"></div>
+            </div>
+        </header>
+
+        <nav id="sidebar">
             <div class="search-container">
                 <input type="text" id="search" placeholder="Search bookmarks...">
                 <button id="search-btn">Search</button>
             </div>
-        </header>
+            
+            <div class="filter-container">
+                <button id="show-favorites" class="filter-btn">Favorites</button>
+                <button id="show-archived" class="filter-btn">Archived</button>
+            </div>
+
+            <div class="lists-container">
+                <h2>Lists</h2>
+                <button id="new-list-btn">New List</button>
+                <ul id="lists"></ul>
+            </div>
+
+            <div class="tags-container">
+                <h2>Tags</h2>
+                <div class="tag-input-container">
+                    <input type="text" id="new-tag" placeholder="New tag name">
+                    <button id="add-tag-btn">Add</button>
+                </div>
+                <div id="tags"></div>
+            </div>
+        </nav>
+
         <main>
-            <section id="bookmarks-list"></section>
+            <div class="toolbar">
+                <button id="new-bookmark-btn">New Bookmark</button>
+                <button id="import-singlefile-btn">Import SingleFile</button>
+            </div>
+
+            <section id="bookmarks-container">
+                <div id="bookmarks-list"></div>
+                <div id="load-more" class="hidden">Load More</div>
+            </section>
+
+            <div id="bookmark-modal" class="modal hidden">
+                <div class="modal-content">
+                    <h2>Add/Edit Bookmark</h2>
+                    <input type="text" id="bookmark-url" placeholder="URL">
+                    <input type="text" id="bookmark-title" placeholder="Title">
+                    <div class="bookmark-options">
+                        <label>
+                            <input type="checkbox" id="bookmark-favorite">
+                            Favorite
+                        </label>
+                        <label>
+                            <input type="checkbox" id="bookmark-archive">
+                            Archive
+                        </label>
+                    </div>
+                    <div class="bookmark-tags">
+                        <h3>Tags</h3>
+                        <div id="bookmark-tags-list"></div>
+                    </div>
+                    <div class="bookmark-lists">
+                        <h3>Lists</h3>
+                        <div id="bookmark-lists-list"></div>
+                    </div>
+                    <div class="modal-actions">
+                        <button id="save-bookmark">Save</button>
+                        <button id="cancel-bookmark">Cancel</button>
+                    </div>
+                </div>
+            </div>
+
+            <div id="highlight-modal" class="modal hidden">
+                <div class="modal-content">
+                    <h2>Add Highlight</h2>
+                    <textarea id="highlight-text" placeholder="Enter highlight text"></textarea>
+                    <div class="modal-actions">
+                        <button id="save-highlight">Save</button>
+                        <button id="cancel-highlight">Cancel</button>
+                    </div>
+                </div>
+            </div>
         </main>
+
+        <div id="toast" class="hidden"></div>
     </div>
     <script src="main.js"></script>
 </body>

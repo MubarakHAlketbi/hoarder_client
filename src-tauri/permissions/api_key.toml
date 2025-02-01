@@ -1,0 +1,17 @@
+[[permission]]
+identifier = "store-api-key"
+description = "Allow storing the API key securely"
+commands.allow = ["store_api_key"]
+
+[[permission]]
+identifier = "get-api-key"
+description = "Allow retrieving the stored API key"
+commands.allow = ["get_api_key"]
+
+[[set]]
+identifier = "api-key-permissions"
+description = "Permissions for API key storage and retrieval"
+permissions = [
+    "store-api-key",
+    "get-api-key"
+]
