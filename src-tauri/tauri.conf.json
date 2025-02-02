@@ -11,9 +11,12 @@
     "windows": [
       {
         "label": "main",
-        "title": "hoarder_client",
+        "title": "Hoarder Client",
         "width": 800,
-        "height": 600
+        "height": 600,
+        "visible": true,
+        "decorations": true,
+        "devtools": true
       }
     ],
     "security": {

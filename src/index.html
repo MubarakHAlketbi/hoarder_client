@@ -10,92 +10,110 @@
     <div id="app">
         <header>
             <h1>Hoarder Client</h1>
-            <div id="api-key-section">
-                <input type="text" id="api-key" placeholder="Enter your API key">
-                <button id="api-key-submit">Submit</button>
-                <div id="api-key-message"></div>
+            
+            <div id="setup-section" class="auth-form">
+                <h2>Server Configuration</h2>
+                
+                <div class="step-indicator">
+                    <div class="step active" data-step="1" title="Server URL">1</div>
+                    <div class="step" data-step="2" title="API Key">2</div>
+                    <div class="step" data-step="3" title="Connection Test">3</div>
+                </div>
+
+                <div class="form-group">
+                    <input 
+                        type="url" 
+                        id="server-url" 
+                        value="https://hoarder.sato942.com"
+                        placeholder="Enter server URL" 
+                        pattern="https?:\/\/.+"
+                        title="Please enter a valid URL starting with http:// or https://"
+                        required
+                    >
+                    <input 
+                        type="text" 
+                        id="api-key" 
+                        placeholder="Enter your API key"
+                        pattern="ak1_[a-zA-Z0-9]+_[a-zA-Z0-9]+"
+                        title="API key format: ak1_xxxxx_xxxxx"
+                        required
+                    >
+                </div>
+                <button id="configure-btn">Configure</button>
+                <div id="setup-message"></div>
             </div>
         </header>
 
-        <nav id="sidebar">
-            <div class="search-container">
-                <input type="text" id="search" placeholder="Search bookmarks...">
-                <button id="search-btn">Search</button>
-            </div>
-            
-            <div class="filter-container">
-                <button id="show-favorites" class="filter-btn">Favorites</button>
-                <button id="show-archived" class="filter-btn">Archived</button>
-            </div>
-
-            <div class="lists-container">
-                <h2>Lists</h2>
-                <button id="new-list-btn">New List</button>
-                <ul id="lists"></ul>
-            </div>
-
-            <div class="tags-container">
-                <h2>Tags</h2>
-                <div class="tag-input-container">
-                    <input type="text" id="new-tag" placeholder="New tag name">
-                    <button id="add-tag-btn">Add</button>
+        <div id="main-content" class="hidden">
+            <nav id="sidebar">
+                <div class="search-container">
+                    <input type="text" id="search" placeholder="Search bookmarks...">
+                    <button id="search-btn">Search</button>
                 </div>
-                <div id="tags"></div>
-            </div>
-        </nav>
-
-        <main>
-            <div class="toolbar">
-                <button id="new-bookmark-btn">New Bookmark</button>
-                <button id="import-singlefile-btn">Import SingleFile</button>
-            </div>
-
-            <section id="bookmarks-container">
-                <div id="bookmarks-list"></div>
-                <div id="load-more" class="hidden">Load More</div>
-            </section>
-
-            <div id="bookmark-modal" class="modal hidden">
-                <div class="modal-content">
-                    <h2>Add/Edit Bookmark</h2>
-                    <input type="text" id="bookmark-url" placeholder="URL">
-                    <input type="text" id="bookmark-title" placeholder="Title">
-                    <div class="bookmark-options">
-                        <label>
-                            <input type="checkbox" id="bookmark-favorite">
-                            Favorite
-                        </label>
-                        <label>
-                            <input type="checkbox" id="bookmark-archive">
-                            Archive
-                        </label>
-                    </div>
-                    <div class="bookmark-tags">
-                        <h3>Tags</h3>
-                        <div id="bookmark-tags-list"></div>
-                    </div>
-                    <div class="bookmark-lists">
-                        <h3>Lists</h3>
-                        <div id="bookmark-lists-list"></div>
-                    </div>
-                    <div class="modal-actions">
-                        <button id="save-bookmark">Save</button>
-                        <button id="cancel-bookmark">Cancel</button>
-                    </div>
+                
+                <div class="filter-container">
+                    <button id="show-favorites" class="filter-btn">Favorites</button>
+                    <button id="show-archived" class="filter-btn">Archived</button>
                 </div>
-            </div>
 
-            <div id="highlight-modal" class="modal hidden">
-                <div class="modal-content">
-                    <h2>Add Highlight</h2>
-                    <textarea id="highlight-text" placeholder="Enter highlight text"></textarea>
-                    <div class="modal-actions">
-                        <button id="save-highlight">Save</button>
-                        <button id="cancel-highlight">Cancel</button>
+                <div class="lists-container">
+                    <h2>Lists</h2>
+                    <button id="new-list-btn">New List</button>
+                    <ul id="lists"></ul>
+                </div>
+
+                <div class="tags-container">
+                    <h2>Tags</h2>
+                    <div class="tag-input-container">
+                        <input type="text" id="new-tag" placeholder="New tag name">
+                        <button id="add-tag-btn">Add</button>
+                    </div>
+                    <div id="tags"></div>
+                </div>
+            </nav>
+
+            <main>
+                <div class="toolbar">
+                    <button id="new-bookmark-btn">New Bookmark</button>
+                    <button id="import-singlefile-btn">Import SingleFile</button>
+                </div>
+
+                <section id="bookmarks-container">
+                    <div id="bookmarks-list"></div>
+                    <div id="load-more" class="hidden">Load More</div>
+                </section>
+
+                <div id="bookmark-modal" class="modal hidden">
+                    <div class="modal-content">
+                        <h2>Add/Edit Bookmark</h2>
+                        <input type="text" id="bookmark-url" placeholder="URL">
+                        <input type="text" id="bookmark-title" placeholder="Title">
+                        <div class="bookmark-options">
+                            <label>
+                                <input type="checkbox" id="bookmark-favorite">
+                                Favorite
+                            </label>
+                            <label>
+                                <input type="checkbox" id="bookmark-archive">
+                                Archive
+                            </label>
+                        </div>
+                        <div class="bookmark-tags">
+                            <h3>Tags</h3>
+                            <div id="bookmark-tags-list"></div>
+                        </div>
+                        <div class="bookmark-lists">
+                            <h3>Lists</h3>
+                            <div id="bookmark-lists-list"></div>
+                        </div>
+                        <div class="modal-actions">
+                            <button id="save-bookmark">Save</button>
+                            <button id="cancel-bookmark">Cancel</button>
+                        </div>
                     </div>
                 </div>
-            </div>
-        </main>
+            </main>
+        </div>
 
         <div id="toast" class="hidden"></div>
     </div>

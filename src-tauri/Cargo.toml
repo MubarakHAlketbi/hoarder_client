@@ -3,21 +3,28 @@ name = "hoarder_client"
 version = "0.1.0"
 description = "A Tauri App"
 authors = ["you"]
+license = ""
+repository = ""
 edition = "2021"
+
+[build-dependencies]
+tauri-build = { version = "2.0.0-beta.9", features = [] }
+
+[dependencies]
+tauri = { version = "2.0.0-beta.9", features = [] }
+serde = { version = "1.0", features = ["derive"] }
+serde_json = "1.0"
+reqwest = { version = "0.11", features = ["json"] }
+tokio = { version = "1.0", features = ["full"] }
+thiserror = "1.0"
+url = "2.5.0"
+chrono = "0.4"
+lazy_static = "1.4"
+tauri-plugin-http = "2.0.0-beta.2"
+
+[features]
+custom-protocol = ["tauri/custom-protocol"]
 
 [lib]
 name = "hoarder_client_lib"
 crate-type = ["staticlib", "cdylib", "rlib"]
-
-[build-dependencies]
-tauri-build = { version = "2", features = [] }
-
-[dependencies]
-tauri = { version = "2", features = [] }
-serde = { version = "1", features = ["derive"] }
-serde_json = "1"
-thiserror = "1.0"
-reqwest = { version = "0.11", features = ["json"] }
-tokio = { version = "1.0", features = ["full"] }
-anyhow = "1.0"
-url = "2.5"
