@@ -1,19 +1,62 @@
-const { invoke } = window.__TAURI__.tauri;
+let isInitialized = false;
+let initializationError = null;
+
+// Initialize Tauri API
+async function initializeTauri() {
+    if (isInitialized) {
+        if (initializationError) {
+            throw initializationError;
+        }
+        return window.__TAURI__.core;
+    }
+
+    return new Promise((resolve, reject) => {
+        const timeout = setTimeout(() => {
+            const error = new Error('Tauri initialization timeout');
+            initializationError = error;
+            reject(error);
+        }, 5000);
+
+        const checkTauri = () => {
+            if (window.__TAURI__?.core?.invoke) {
+                clearTimeout(timeout);
+                isInitialized = true;
+                resolve(window.__TAURI__.core);
+            } else {
+                const error = new Error('Tauri API not found');
+                initializationError = error;
+                reject(error);
+            }
+        };
+
+        // Check if Tauri is already available
+        if (window.__TAURI__?.core?.invoke) {
+            checkTauri();
+            return;
+        }
+
+        // Wait for the tauri://ready event
+        const readyHandler = () => {
+            checkTauri();
+            window.removeEventListener('tauri://ready', readyHandler);
+        };
+        window.addEventListener('tauri://ready', readyHandler);
+    });
+}
+
+// Helper function to safely invoke Tauri commands
+async function invoke(cmd, args = undefined) {
+    const api = await initializeTauri();
+    if (!api?.invoke) {
+        throw new Error('Tauri API not properly initialized');
+    }
+    return api.invoke(cmd, args);
+}
 
 // Logging
 async function log(message, data = null) {
     const logMessage = data ? `${message}: ${JSON.stringify(data, null, 2)}` : message;
     console.log(`🔵 [HOARDER] ${logMessage}`);
-    
-    // Get log file path for debugging
-    try {
-        const logPath = await invoke('get_log_path');
-        if (logPath) {
-            console.log(`🔵 [HOARDER] Log file: ${logPath}`);
-        }
-    } catch (err) {
-        console.error('Failed to get log path:', err);
-    }
 }
 
 function error(message, data = null) {
@@ -50,9 +93,27 @@ const toast = document.getElementById('toast');
 function validateUrl(url) {
     try {
         log('Validating URL', url);
-        const parsedUrl = new URL(url);
+        
+        // Handle IP addresses and missing protocols
+        let validUrl = url;
+        if (!validUrl.startsWith('http://') && !validUrl.startsWith('https://')) {
+            validUrl = `https://${validUrl}`;
+        }
+        
+        // Validate the URL
+        const parsedUrl = new URL(validUrl);
         const isValid = parsedUrl.protocol === 'http:' || parsedUrl.protocol === 'https:';
-        log('URL validation result', { url, isValid });
+        
+        // Check if it's an IP address
+        const isIpAddress = /^(\d{1,3}\.){3}\d{1,3}(:\d+)?$/.test(url);
+        
+        log('URL validation result', {
+            originalUrl: url,
+            validatedUrl: validUrl,
+            isValid,
+            isIpAddress
+        });
+        
         return isValid;
     } catch (err) {
         error('URL validation error', { url, error: err.message });
@@ -77,9 +138,33 @@ async function validateServerUrl(url) {
         throw new Error('Please enter a valid URL (e.g., https://hoarder.sato942.com)');
     }
 
-    await invoke('set_base_url', { url });
-    log('Server URL validated');
-    return true;
+    try {
+        const result = await invoke('set_base_url', { url });
+        log('Server URL validation result:', { result });
+        
+        // Success case - Rust returns () which becomes null in JS
+        if (result === null || result === undefined) {
+            log('Server URL validated successfully');
+            return true;
+        }
+        
+        // Unexpected response
+        throw new Error('Invalid response from server');
+    } catch (err) {
+        log('Server URL validation failed:', { error: err });
+        
+        // Parse the error message from Rust
+        const errorStr = err.toString();
+        if (errorStr.includes('UrlError')) {
+            throw new Error('Invalid URL format. Please check the URL and try again.');
+        } else if (errorStr.includes('StorageError')) {
+            throw new Error('Failed to save URL. Please try again.');
+        } else if (errorStr.includes('Tauri')) {
+            throw new Error('Failed to connect to the application. Please restart and try again.');
+        } else {
+            throw new Error('Failed to validate server URL. Please check your connection and try again.');
+        }
+    }
 }
 
 async function validateApiKey(apiKey) {
@@ -90,18 +175,69 @@ async function validateApiKey(apiKey) {
         throw new Error('Invalid API key format');
     }
 
-    await invoke('store_api_key', { apiKey });
-    log('API key validated');
-    return true;
+    try {
+        const result = await invoke('store_api_key', { apiKey });
+        log('API key validation result:', { result });
+        
+        // Success case - Rust returns () which becomes null in JS
+        if (result === null || result === undefined) {
+            log('API key validated successfully');
+            return true;
+        }
+        
+        // Unexpected response
+        throw new Error('Invalid response from server');
+    } catch (err) {
+        log('API key validation failed:', { error: err });
+        
+        // Parse the error message from Rust
+        const errorStr = err.toString();
+        if (errorStr.includes('StorageError')) {
+            throw new Error('Failed to save API key. Please try again.');
+        } else if (errorStr.includes('ApiError')) {
+            throw new Error('Invalid API key. Please check your credentials.');
+        } else if (errorStr.includes('HttpError')) {
+            throw new Error('Failed to connect to server. Please check your network connection.');
+        } else if (errorStr.includes('Tauri')) {
+            throw new Error('Failed to connect to the application. Please restart and try again.');
+        } else {
+            throw new Error('Failed to validate API key. Please try again.');
+        }
+    }
 }
 
 async function testConnection() {
     log('Step 3: Testing connection');
     updateSetupStatus('Testing connection...');
     
-    const response = await invoke('fetch_bookmarks', { limit: 1 });
-    log('Connection test successful', { response });
-    return true;
+    try {
+        const response = await invoke('fetch_bookmarks', { limit: 1 });
+        log('Connection test result:', { response });
+        
+        if (response && typeof response === 'object') {
+            log('Connection test successful');
+            return true;
+        }
+        
+        // Unexpected response
+        throw new Error('Invalid response from server');
+    } catch (err) {
+        log('Connection test failed:', { error: err });
+        
+        // Parse the error message from Rust
+        const errorStr = err.toString();
+        if (errorStr.includes('NotFound')) {
+            throw new Error('API key not found. Please try configuring again.');
+        } else if (errorStr.includes('ApiError')) {
+            throw new Error('Server rejected the request. Please check your credentials.');
+        } else if (errorStr.includes('HttpError')) {
+            throw new Error('Failed to connect to server. Please check your network connection.');
+        } else if (errorStr.includes('Tauri')) {
+            throw new Error('Failed to connect to the application. Please restart and try again.');
+        } else {
+            throw new Error('Connection test failed. Please try again.');
+        }
+    }
 }
 
 function updateSetupStatus(message, type = '') {
@@ -112,32 +248,42 @@ function updateSetupStatus(message, type = '') {
 
 // Server Configuration
 async function configureServer() {
-    if (isLoading) return;
+    if (isLoading) {
+        log('Connection attempt blocked - already loading');
+        return;
+    }
 
     const serverUrl = serverUrlInput.value.trim();
     const apiKey = apiKeyInput.value.trim();
 
-    log('Starting configuration', { serverUrl });
+    log('Starting connection attempt', {
+        serverUrl: serverUrl,
+        apiKey: '***' // Mask API key in logs
+    });
     
     if (!serverUrl || !apiKey) {
-        updateSetupStatus('Please enter both server URL and API key', 'error');
+        const errorMsg = 'Please enter both server URL and API key';
+        error('Connection attempt failed - missing credentials', { errorMsg });
+        updateSetupStatus(errorMsg, 'error');
         return;
     }
 
     setLoading(true);
     try {
-        // Step 1: Validate Server URL
+        log('Step 1: Validating server URL');
         await validateServerUrl(serverUrl);
         
-        // Step 2: Validate API Key
+        log('Step 2: Validating API key');
         await validateApiKey(apiKey);
         
-        // Step 3: Test Connection
-        await testConnection();
+        log('Step 3: Testing connection');
+        const connectionResult = await testConnection();
+        log('Connection test successful', { result: connectionResult });
 
         // Success
-        updateSetupStatus('Configuration successful', 'success');
-        log('Configuration completed successfully');
+        const successMsg = 'Successfully connected to server';
+        log('Connection completed successfully', { message: successMsg });
+        updateSetupStatus(successMsg, 'success');
         
         setTimeout(() => {
             setupSection.classList.add('hidden');
@@ -145,19 +291,59 @@ async function configureServer() {
             initializeApp();
         }, 1000);
     } catch (err) {
-        error('Configuration error', { error: err.toString() });
-        updateSetupStatus(err.toString(), 'error');
+        // Parse API error messages
+        let errorMsg = err.toString();
+        if (err.message.includes('NetworkError')) {
+            errorMsg = 'Failed to connect to server. Please check your network connection.';
+        } else if (err.message.includes('Invalid API key')) {
+            errorMsg = 'Invalid API key. Please check your credentials.';
+        } else if (err.message.includes('Invalid URL')) {
+            errorMsg = 'Invalid server URL. Please check the format and try again.';
+        }
+
+        error('Connection attempt failed', {
+            error: err.toString(),
+            message: errorMsg
+        });
+        updateSetupStatus(errorMsg, 'error');
     } finally {
         setLoading(false);
+        log('Connection attempt completed');
     }
 }
 
 // Event Listeners
-configureBtn.addEventListener('click', async (e) => {
-    e.preventDefault();
-    log('Configure button clicked');
-    await configureServer();
-});
+log('Setting up event listeners');
+log('Configure button element:', configureBtn);
+
+if (!configureBtn) {
+    error('Configure button element not found!');
+    error('Available elements:', {
+        setupSection: !!setupSection,
+        serverUrlInput: !!serverUrlInput,
+        apiKeyInput: !!apiKeyInput,
+        configureBtn: !!configureBtn
+    });
+} else {
+    log('Adding click event listener to configure button');
+    try {
+        configureBtn.addEventListener('click', async (e) => {
+            e.preventDefault();
+            log('Configure button clicked - event details:', {
+                type: e.type,
+                timeStamp: e.timeStamp,
+                target: e.target
+            });
+            await configureServer();
+        });
+        log('Event listener successfully added to configure button');
+    } catch (err) {
+        error('Failed to add event listener to configure button', {
+            error: err.toString(),
+            stack: err.stack
+        });
+    }
+}
 
 // Bookmark Management
 async function fetchBookmarks(reset = false) {
@@ -171,6 +357,7 @@ async function fetchBookmarks(reset = false) {
 
     log('Fetching bookmarks', { reset, filters: activeFilters, cursor: nextCursor });
     setLoading(true);
+    
     try {
         const response = await invoke('fetch_bookmarks', {
             favourited: activeFilters.favourited,
@@ -178,9 +365,9 @@ async function fetchBookmarks(reset = false) {
             cursor: nextCursor,
             limit: 20
         });
-        log('Bookmarks fetched', { 
+        log('Bookmarks fetched', {
             count: response.bookmarks.length,
-            nextCursor: response.next_cursor 
+            nextCursor: response.next_cursor
         });
         
         currentBookmarks = [...currentBookmarks, ...response.bookmarks];
@@ -189,8 +376,11 @@ async function fetchBookmarks(reset = false) {
         renderBookmarks();
         loadMoreBtn.classList.toggle('hidden', !nextCursor);
     } catch (err) {
-        error('Bookmark fetch error', { error: err.toString() });
-        showToast(err.toString(), 'error');
+        const errorMessage = err.message?.includes('Tauri')
+            ? 'Failed to connect to the application. Please restart and try again.'
+            : `Failed to fetch bookmarks: ${err.message}`;
+        error('Bookmark fetch error', { error: errorMessage });
+        showToast(errorMessage, 'error');
     } finally {
         setLoading(false);
     }
@@ -275,13 +465,58 @@ function showToast(message, type = 'info') {
 
 // Initialize App
 async function initializeApp() {
-    log('Initializing app');
-    await fetchBookmarks(true);
+    try {
+        log('Initializing app');
+        await fetchBookmarks(true);
+        log('App initialized successfully');
+    } catch (err) {
+        error('Failed to initialize app', { error: err.message });
+        showToast('Failed to load bookmarks. Please try refreshing the page.', 'error');
+    }
 }
 
 // Start the app
 log('Starting app');
-document.getElementById('main-content').classList.add('hidden');
+
+// Add loading overlay
+const loadingOverlay = document.createElement('div');
+loadingOverlay.className = 'loading-overlay';
+loadingOverlay.innerHTML = `
+    <div class="loading-content">
+        <h2>Loading Application...</h2>
+        <p>Please wait while the application initializes...</p>
+    </div>
+`;
+document.body.appendChild(loadingOverlay);
+
+// Initialize application
+(async () => {
+    try {
+        // Initialize Tauri
+        await initializeTauri();
+        
+        // Remove loading overlay
+        loadingOverlay.remove();
+        
+        // Initialize UI
+        document.getElementById('main-content').classList.add('hidden');
+        log('Application initialized successfully');
+    } catch (err) {
+        error('Failed to initialize application', { error: err.message });
+        loadingOverlay.innerHTML = `
+            <div class="error-content">
+                <h1>Application Error</h1>
+                <p>Failed to initialize the application. Please try:</p>
+                <ol>
+                    <li>Restarting the application</li>
+                    <li>Ensuring you have the latest version</li>
+                    <li>Contact support if the issue persists</li>
+                </ol>
+                <p class="error-details">${err.message}</p>
+            </div>
+        `;
+    }
+})();
 
 // Debug helper
 window.addEventListener('error', (event) => {
