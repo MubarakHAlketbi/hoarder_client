@@ -1,180 +1,254 @@
-import { createHoarderClient } from '@hoarderapp/sdk';
-
 export class HoarderAPI {
     constructor(baseUrl, apiKey) {
-        this.client = createHoarderClient({
-            baseUrl,
-            headers: {
-                'Authorization': `Bearer ${apiKey}`,
-                'Content-Type': 'application/json'
+        this.baseUrl = baseUrl;
+        this.apiKey = apiKey;
+    }
+
+    async request(path, options = {}) {
+        const url = new URL(path, this.baseUrl);
+        
+        // Add query parameters if provided
+        if (options.params) {
+            Object.entries(options.params).forEach(([key, value]) => {
+                if (value !== undefined) {
+                    url.searchParams.append(key, value);
+                }
+            });
+        }
+
+        const headers = {
+            'Authorization': `Bearer ${this.apiKey}`,
+            ...options.headers
+        };
+
+        // Don't set Content-Type for FormData
+        if (!(options.body instanceof FormData)) {
+            headers['Content-Type'] = 'application/json';
+        }
+
+        try {
+            const response = await fetch(url, {
+                method: options.method || 'GET',
+                headers,
+                body: options.body instanceof FormData 
+                    ? options.body 
+                    : options.body ? JSON.stringify(options.body) : undefined
+            });
+
+            if (!response.ok) {
+                const error = await this.parseResponse(response);
+                throw new Error(error.error || 'Request failed');
             }
-        });
+
+            // Handle no-content responses
+            if (response.status === 204) {
+                return null;
+            }
+
+            return this.parseResponse(response);
+        } catch (err) {
+            throw new Error(err.message || 'Network error');
+        }
+    }
+
+    async parseResponse(response) {
+        const contentType = response.headers.get('Content-Type') || '';
+        
+        // Handle empty responses
+        if (response.status === 204 || response.headers.get('Content-Length') === '0') {
+            return null;
+        }
+
+        // Parse JSON responses
+        if (contentType.includes('application/json')) {
+            try {
+                return await response.json();
+            } catch (err) {
+                throw new Error('Invalid JSON response');
+            }
+        }
+
+        // Handle text responses
+        if (contentType.includes('text/')) {
+            return { text: await response.text() };
+        }
+
+        // Return raw response for other types
+        return response;
     }
 
     // Bookmarks
     async getBookmarks(params = {}) {
         const { page, limit, favourited, archived } = params;
-        return this.client.GET('/v1/bookmarks', {
-            params: {
-                page,
-                limit,
-                favourited: favourited?.toString(),
-                archived: archived?.toString()
-            }
-        });
+        const queryParams = {
+            limit,
+            page,
+            ...(favourited !== undefined && { favourited: favourited.toString() }),
+            ...(archived !== undefined && { archived: archived.toString() })
+        };
+        return this.request('/api/v1/bookmarks', { params: queryParams });
     }
 
     async createBookmark(data) {
-        return this.client.POST('/v1/bookmarks', { data });
+        return this.request('/api/v1/bookmarks', {
+            method: 'POST',
+            body: data
+        });
     }
 
     async getBookmark(id) {
-        return this.client.GET(`/v1/bookmarks/${id}`);
+        return this.request(`/api/v1/bookmarks/${id}`);
     }
 
     async updateBookmark(id, data) {
-        return this.client.PATCH(`/v1/bookmarks/${id}`, { data });
+        return this.request(`/api/v1/bookmarks/${id}`, {
+            method: 'PATCH',
+            body: data
+        });
     }
 
     async deleteBookmark(id) {
-        return this.client.DELETE(`/v1/bookmarks/${id}`);
+        return this.request(`/api/v1/bookmarks/${id}`, {
+            method: 'DELETE'
+        });
     }
 
     async searchBookmarks(query, params = {}) {
         const { limit, cursor } = params;
-        return this.client.GET('/v1/bookmarks/search', { 
-            params: { 
-                q: query,
-                limit,
-                cursor
-            }
-        });
+        const queryParams = {
+            q: query,
+            ...(limit && { limit }),
+            ...(cursor && { cursor })
+        };
+        return this.request('/api/v1/bookmarks/search', { params: queryParams });
     }
 
     async exportBookmarks() {
-        return this.client.GET('/v1/bookmarks/export');
-    }
-
-    // Highlights
-    async getHighlights(params = {}) {
-        return this.client.GET('/v1/highlights', { params });
-    }
-
-    async createHighlight(data) {
-        return this.client.POST('/v1/highlights', { data });
-    }
-
-    async getHighlight(id) {
-        return this.client.GET(`/v1/highlights/${id}`);
-    }
-
-    async updateHighlight(id, data) {
-        return this.client.PATCH(`/v1/highlights/${id}`, { data });
-    }
-
-    async deleteHighlight(id) {
-        return this.client.DELETE(`/v1/highlights/${id}`);
+        return this.request('/api/v1/bookmarks/export');
     }
 
     // Lists
     async getLists() {
-        return this.client.GET('/v1/lists');
+        return this.request('/api/v1/lists');
     }
 
     async createList(data) {
-        return this.client.POST('/v1/lists', { data });
+        return this.request('/api/v1/lists', {
+            method: 'POST',
+            body: data
+        });
     }
 
     async getList(id) {
-        return this.client.GET(`/v1/lists/${id}`);
+        return this.request(`/api/v1/lists/${id}`);
     }
 
     async updateList(id, data) {
-        return this.client.PATCH(`/v1/lists/${id}`, { data });
+        return this.request(`/api/v1/lists/${id}`, {
+            method: 'PATCH',
+            body: data
+        });
     }
 
     async deleteList(id) {
-        return this.client.DELETE(`/v1/lists/${id}`);
+        return this.request(`/api/v1/lists/${id}`, {
+            method: 'DELETE'
+        });
     }
 
     async getListBookmarks(id, params = {}) {
         const { limit, cursor } = params;
-        return this.client.GET(`/v1/lists/${id}/bookmarks`, {
-            params: { limit, cursor }
-        });
+        const queryParams = {
+            ...(limit && { limit }),
+            ...(cursor && { cursor })
+        };
+        return this.request(`/api/v1/lists/${id}/bookmarks`, { params: queryParams });
     }
 
     async addBookmarkToList(listId, bookmarkId) {
-        return this.client.PUT(`/v1/lists/${listId}/bookmarks/${bookmarkId}`);
+        return this.request(`/api/v1/lists/${listId}/bookmarks/${bookmarkId}`, {
+            method: 'PUT'
+        });
     }
 
     async removeBookmarkFromList(listId, bookmarkId) {
-        return this.client.DELETE(`/v1/lists/${listId}/bookmarks/${bookmarkId}`);
+        return this.request(`/api/v1/lists/${listId}/bookmarks/${bookmarkId}`, {
+            method: 'DELETE'
+        });
     }
 
     // Tags
     async getTags() {
-        return this.client.GET('/v1/tags');
+        return this.request('/api/v1/tags');
     }
 
     async getTag(id) {
-        return this.client.GET(`/v1/tags/${id}`);
+        return this.request(`/api/v1/tags/${id}`);
     }
 
     async updateTag(id, data) {
-        return this.client.PATCH(`/v1/tags/${id}`, { data });
+        return this.request(`/api/v1/tags/${id}`, {
+            method: 'PATCH',
+            body: data
+        });
     }
 
     async deleteTag(id) {
-        return this.client.DELETE(`/v1/tags/${id}`);
+        return this.request(`/api/v1/tags/${id}`, {
+            method: 'DELETE'
+        });
     }
 
     async getTagBookmarks(id, params = {}) {
         const { limit, cursor } = params;
-        return this.client.GET(`/v1/tags/${id}/bookmarks`, {
-            params: { limit, cursor }
-        });
+        const queryParams = {
+            ...(limit && { limit }),
+            ...(cursor && { cursor })
+        };
+        return this.request(`/api/v1/tags/${id}/bookmarks`, { params: queryParams });
     }
 
     // Assets
     async uploadAsset(file) {
         const formData = new FormData();
         formData.append('file', file);
-        return this.client.POST('/api/v1/assets', {
-            data: formData,
-            headers: {
-                'Content-Type': 'multipart/form-data'
-            }
+        return this.request('/api/assets', {
+            method: 'POST',
+            body: formData
         });
     }
 
     async getAsset(id) {
-        return this.client.GET(`/api/v1/assets/${id}`);
+        return this.request(`/api/assets/${id}`);
     }
 
     // Bookmark Assets
     async getBookmarkAssets(bookmarkId) {
-        return this.client.GET(`/v1/bookmarks/${bookmarkId}/assets`);
+        return this.request(`/api/v1/bookmarks/${bookmarkId}/assets`);
     }
 
     async attachAssetToBookmark(bookmarkId, assetId) {
-        return this.client.POST(`/v1/bookmarks/${bookmarkId}/assets`, {
-            data: { assetId }
+        return this.request(`/api/v1/bookmarks/${bookmarkId}/assets`, {
+            method: 'POST',
+            body: { assetId }
         });
     }
 
     async replaceBookmarkAsset(bookmarkId, oldAssetId, newAssetId) {
-        return this.client.PUT(`/v1/bookmarks/${bookmarkId}/assets/${oldAssetId}`, {
-            data: { assetId: newAssetId }
+        return this.request(`/api/v1/bookmarks/${bookmarkId}/assets/${oldAssetId}`, {
+            method: 'PUT',
+            body: { assetId: newAssetId }
         });
     }
 
     async detachAssetFromBookmark(bookmarkId, assetId) {
-        return this.client.DELETE(`/v1/bookmarks/${bookmarkId}/assets/${assetId}`);
+        return this.request(`/api/v1/bookmarks/${bookmarkId}/assets/${assetId}`, {
+            method: 'DELETE'
+        });
     }
 
     // Health Check
     async checkHealth() {
-        return this.client.GET('/api/health');
+        return this.request('/api/health');
     }
 }

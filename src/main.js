@@ -2,6 +2,7 @@ import { HoarderAPI } from './api.js';
 
 // Configuration Management
 const CONFIG_KEY = 'hoarder_config';
+const THEME_KEY = 'theme';
 
 function getConfig() {
     const config = localStorage.getItem(CONFIG_KEY);
@@ -10,6 +11,16 @@ function getConfig() {
 
 function setConfig(serverUrl, apiKey) {
     localStorage.setItem(CONFIG_KEY, JSON.stringify({ serverUrl, apiKey }));
+    updateServerDisplay();
+}
+
+function getTheme() {
+    return localStorage.getItem(THEME_KEY) || 'dark';
+}
+
+function setTheme(theme) {
+    localStorage.setItem(THEME_KEY, theme);
+    document.documentElement.setAttribute('data-theme', theme);
 }
 
 // State Management
@@ -18,6 +29,7 @@ let currentHighlights = [];
 let currentLists = [];
 let currentTags = [];
 let nextCursor = null;
+let currentPage = 1;
 let activeFilters = {
     favourited: false,
     archived: false,
@@ -39,19 +51,60 @@ const searchInput = document.getElementById('search');
 const searchBtn = document.getElementById('search-btn');
 const showFavoritesBtn = document.getElementById('show-favorites');
 const showArchivedBtn = document.getElementById('show-archived');
+const exportBtn = document.getElementById('export-btn');
+const settingsBtn = document.getElementById('settings-btn');
 const bookmarksList = document.getElementById('bookmarks-list');
 const loadMoreBtn = document.getElementById('load-more');
 const loadingOverlay = document.getElementById('loading-overlay');
 const toast = document.getElementById('toast');
 const listsContainer = document.getElementById('lists-container');
 const tagsContainer = document.getElementById('tags-container');
+const newListBtn = document.getElementById('new-list-btn');
+const settingsPage = document.getElementById('settings-page');
+const backBtn = document.getElementById('back-btn');
+const themeToggle = document.getElementById('theme-toggle');
+const currentServer = document.getElementById('current-server');
+const changeServerBtn = document.getElementById('change-server-btn');
+const changeApiKeyBtn = document.getElementById('change-api-key-btn');
+const exportDataBtn = document.getElementById('export-data-btn');
+
+// Modals
 const listModal = document.getElementById('list-modal');
 const listForm = document.getElementById('list-form');
 const listNameInput = document.getElementById('list-name');
+const cancelListBtn = document.getElementById('cancel-list-btn');
+
 const bookmarkModal = document.getElementById('bookmark-modal');
 const bookmarkForm = document.getElementById('bookmark-form');
+const cancelBookmarkBtn = document.getElementById('cancel-bookmark-btn');
+
 const assetModal = document.getElementById('asset-modal');
 const assetForm = document.getElementById('asset-form');
+const cancelAssetBtn = document.getElementById('cancel-asset-btn');
+
+// Settings Functions
+function showSettings() {
+    mainContent.classList.add('hidden');
+    settingsPage.classList.remove('hidden');
+}
+
+function hideSettings() {
+    settingsPage.classList.add('hidden');
+    mainContent.classList.remove('hidden');
+}
+
+function updateServerDisplay() {
+    const config = getConfig();
+    if (config?.serverUrl) {
+        currentServer.textContent = config.serverUrl;
+    }
+}
+
+function toggleTheme() {
+    const newTheme = getTheme() === 'dark' ? 'light' : 'dark';
+    setTheme(newTheme);
+    themeToggle.checked = newTheme === 'dark';
+}
 
 // Validation Functions
 function validateUrl(url) {
@@ -94,7 +147,7 @@ function updateSetupStatus(message, type = '') {
 }
 
 // Modal Functions
-function showCreateListModal() {
+function showListModal() {
     listModal.classList.remove('hidden');
     listNameInput.value = '';
     listNameInput.focus();
@@ -115,6 +168,47 @@ function closeAssetModal() {
     assetForm.reset();
 }
 
+// Helper Functions
+function getBookmarksFromResponse(response) {
+    if (!response) return [];
+    
+    if (Array.isArray(response.bookmarks)) {
+        return response.bookmarks;
+    }
+    
+    if (Array.isArray(response.items)) {
+        return response.items;
+    }
+    
+    if (Array.isArray(response)) {
+        return response;
+    }
+    
+    console.warn('Unexpected response format:', response);
+    return [];
+}
+
+function getNextCursorFromResponse(response) {
+    if (!response) return null;
+    
+    if (response.nextCursor !== undefined) {
+        return response.nextCursor;
+    }
+    
+    if (response.meta?.nextCursor !== undefined) {
+        return response.meta.nextCursor;
+    }
+    
+    if (response.meta?.currentPage !== undefined && response.meta?.totalPages !== undefined) {
+        return response.meta.currentPage < response.meta.totalPages 
+            ? response.meta.currentPage + 1
+            : null;
+    }
+    
+    console.warn('Could not determine next cursor from response:', response);
+    return null;
+}
+
 // API Functions
 async function fetchBookmarks(reset = false) {
     if (isLoading) return;
@@ -122,49 +216,52 @@ async function fetchBookmarks(reset = false) {
     if (reset) {
         currentBookmarks = [];
         nextCursor = null;
-        bookmarksList.innerHTML = '';
+        currentPage = 1;
+        bookmarksList.innerHTML = '<div class="loading-skeleton"></div>';
     }
 
     setLoading(true);
     try {
         let response;
+        const params = { limit: 20 };
+
         if (activeFilters.searchQuery) {
-            response = await api.searchBookmarks(activeFilters.searchQuery, {
-                cursor: nextCursor,
-                limit: 20
-            });
-            currentBookmarks = [...currentBookmarks, ...response.bookmarks];
-            nextCursor = response.nextCursor;
+            if (nextCursor) {
+                params.cursor = nextCursor;
+            }
+            response = await api.searchBookmarks(activeFilters.searchQuery, params);
         } else if (activeFilters.activeList) {
-            response = await api.getListBookmarks(activeFilters.activeList, {
-                cursor: nextCursor,
-                limit: 20
-            });
-            currentBookmarks = [...currentBookmarks, ...response.items];
-            nextCursor = response.meta.nextCursor;
+            if (nextCursor) {
+                params.cursor = nextCursor;
+            }
+            response = await api.getListBookmarks(activeFilters.activeList, params);
         } else if (activeFilters.activeTag) {
-            response = await api.getTagBookmarks(activeFilters.activeTag, {
-                cursor: nextCursor,
-                limit: 20
-            });
-            currentBookmarks = [...currentBookmarks, ...response.items];
-            nextCursor = response.meta.nextCursor;
+            if (nextCursor) {
+                params.cursor = nextCursor;
+            }
+            response = await api.getTagBookmarks(activeFilters.activeTag, params);
         } else {
-            response = await api.getBookmarks({
-                favourited: activeFilters.favourited || undefined,
-                archived: activeFilters.archived || undefined,
-                page: nextCursor ? parseInt(nextCursor) : 1,
-                limit: 20
-            });
-            currentBookmarks = [...currentBookmarks, ...response.items];
-            nextCursor = response.meta.currentPage < response.meta.totalPages 
-                ? (response.meta.currentPage + 1).toString()
-                : null;
+            params.page = currentPage;
+            if (activeFilters.favourited) {
+                params.favourited = true;
+            }
+            if (activeFilters.archived) {
+                params.archived = true;
+            }
+            response = await api.getBookmarks(params);
+        }
+
+        const newBookmarks = getBookmarksFromResponse(response);
+        currentBookmarks = [...currentBookmarks, ...newBookmarks];
+        nextCursor = getNextCursorFromResponse(response);
+        if (nextCursor && !activeFilters.searchQuery && !activeFilters.activeList && !activeFilters.activeTag) {
+            currentPage = nextCursor;
         }
         
         renderBookmarks();
         loadMoreBtn.classList.toggle('hidden', !nextCursor);
     } catch (err) {
+        console.error('Error fetching bookmarks:', err);
         showToast(err.message, 'error');
     } finally {
         setLoading(false);
@@ -172,21 +269,25 @@ async function fetchBookmarks(reset = false) {
 }
 
 async function fetchLists() {
+    listsContainer.innerHTML = '<div class="loading-skeleton"></div>';
     try {
         const response = await api.getLists();
-        currentLists = response.lists;
+        currentLists = Array.isArray(response?.lists) ? response.lists : [];
         renderLists();
     } catch (err) {
+        console.error('Error fetching lists:', err);
         showToast(err.message, 'error');
     }
 }
 
 async function fetchTags() {
+    tagsContainer.innerHTML = '<div class="loading-skeleton"></div>';
     try {
         const response = await api.getTags();
-        currentTags = response.tags;
+        currentTags = Array.isArray(response?.tags) ? response.tags : [];
         renderTags();
     } catch (err) {
+        console.error('Error fetching tags:', err);
         showToast(err.message, 'error');
     }
 }
@@ -201,6 +302,7 @@ async function toggleFavorite(id, favourited) {
             renderBookmarks();
         }
     } catch (err) {
+        console.error('Error toggling favorite:', err);
         showToast(err.message, 'error');
     }
 }
@@ -214,6 +316,7 @@ async function toggleArchived(id, archived) {
             renderBookmarks();
         }
     } catch (err) {
+        console.error('Error toggling archived:', err);
         showToast(err.message, 'error');
     }
 }
@@ -227,6 +330,7 @@ async function deleteBookmark(id) {
         renderBookmarks();
         showToast('Bookmark deleted successfully');
     } catch (err) {
+        console.error('Error deleting bookmark:', err);
         showToast(err.message, 'error');
     }
 }
@@ -236,6 +340,7 @@ async function exportBookmarks() {
         await api.exportBookmarks();
         showToast('Export started');
     } catch (err) {
+        console.error('Error exporting bookmarks:', err);
         showToast(err.message, 'error');
     }
 }
@@ -246,6 +351,7 @@ async function uploadAsset(file) {
         const response = await api.uploadAsset(file);
         return response;
     } catch (err) {
+        console.error('Error uploading asset:', err);
         showToast(err.message, 'error');
         throw err;
     }
@@ -253,52 +359,68 @@ async function uploadAsset(file) {
 
 // Rendering Functions
 function renderBookmarks() {
-    const bookmarksHtml = currentBookmarks.map(bookmark => `
-        <div class="bookmark-card" data-id="${bookmark.id}">
-            <a href="${bookmark.url}" class="bookmark-title" target="_blank">${bookmark.title}</a>
-            <div class="bookmark-url">${bookmark.url}</div>
-            <div class="bookmark-actions">
-                <button onclick="toggleFavorite('${bookmark.id}', ${!bookmark.favourited})"
-                    class="icon-btn ${bookmark.favourited ? 'active' : ''}">
-                    ${bookmark.favourited ? '★' : '☆'}
-                </button>
-                <button onclick="toggleArchived('${bookmark.id}', ${!bookmark.archived})"
-                    class="icon-btn ${bookmark.archived ? 'active' : ''}">
-                    ${bookmark.archived ? '📁' : '📂'}
-                </button>
-                <button onclick="editBookmark('${bookmark.id}')"
-                    class="icon-btn">✏️</button>
-                <button onclick="deleteBookmark('${bookmark.id}')"
-                    class="icon-btn">🗑️</button>
+    const bookmarksHtml = currentBookmarks.map(bookmark => {
+        if (!bookmark?.id) {
+            console.warn('Invalid bookmark:', bookmark);
+            return '';
+        }
+        return `
+            <div class="bookmark-card" data-id="${bookmark.id}">
+                <a href="${bookmark.url || '#'}" class="bookmark-title" target="_blank">
+                    ${bookmark.title || 'Untitled'}
+                </a>
+                <div class="bookmark-url">${bookmark.url || ''}</div>
+                <div class="bookmark-actions">
+                    <button type="button" class="icon-btn favorite-btn ${bookmark.favourited ? 'active' : ''}"
+                        data-id="${bookmark.id}" data-favourited="${bookmark.favourited || false}">
+                        ${bookmark.favourited ? '★' : '☆'}
+                    </button>
+                    <button type="button" class="icon-btn archive-btn ${bookmark.archived ? 'active' : ''}"
+                        data-id="${bookmark.id}" data-archived="${bookmark.archived || false}">
+                        ${bookmark.archived ? '📁' : '📂'}
+                    </button>
+                    <button type="button" class="icon-btn edit-btn" data-id="${bookmark.id}">✏️</button>
+                    <button type="button" class="icon-btn delete-btn" data-id="${bookmark.id}">🗑️</button>
+                </div>
             </div>
-        </div>
-    `).join('');
+        `;
+    }).join('');
 
     bookmarksList.innerHTML = bookmarksHtml || '<div class="no-bookmarks">No bookmarks found</div>';
 }
 
 function renderLists() {
-    const listsHtml = currentLists.map(list => `
-        <div class="list-item ${activeFilters.activeList === list.id ? 'active' : ''}"
-            onclick="filterByList('${list.id}')">
-            <span class="list-name">${list.name}</span>
-            <button onclick="event.stopPropagation(); deleteList('${list.id}')"
-                class="icon-btn small">🗑️</button>
-        </div>
-    `).join('');
+    const listsHtml = currentLists.map(list => {
+        if (!list?.id) {
+            console.warn('Invalid list:', list);
+            return '';
+        }
+        return `
+            <div class="list-item ${activeFilters.activeList === list.id ? 'active' : ''}"
+                data-id="${list.id}">
+                <span class="list-name">${list.name || 'Untitled List'}</span>
+                <button type="button" class="icon-btn small delete-list-btn" data-id="${list.id}">🗑️</button>
+            </div>
+        `;
+    }).join('');
 
     listsContainer.innerHTML = listsHtml || '<div class="no-lists">No lists found</div>';
 }
 
 function renderTags() {
-    const tagsHtml = currentTags.map(tag => `
-        <div class="tag-item ${activeFilters.activeTag === tag.id ? 'active' : ''}"
-            onclick="filterByTag('${tag.id}')">
-            <span class="tag-name">${tag.name}</span>
-            <button onclick="event.stopPropagation(); deleteTag('${tag.id}')"
-                class="icon-btn small">🗑️</button>
-        </div>
-    `).join('');
+    const tagsHtml = currentTags.map(tag => {
+        if (!tag?.id) {
+            console.warn('Invalid tag:', tag);
+            return '';
+        }
+        return `
+            <div class="tag-item ${activeFilters.activeTag === tag.id ? 'active' : ''}"
+                data-id="${tag.id}">
+                <span class="tag-name">${tag.name || 'Untitled Tag'}</span>
+                <button type="button" class="icon-btn small delete-tag-btn" data-id="${tag.id}">🗑️</button>
+            </div>
+        `;
+    }).join('');
 
     tagsContainer.innerHTML = tagsHtml || '<div class="no-tags">No tags found</div>';
 }
@@ -325,7 +447,7 @@ setupForm.addEventListener('submit', async (e) => {
         api = new HoarderAPI(serverUrl, apiKey);
         
         const response = await api.checkHealth();
-        if (response.status !== 'ok') {
+        if (!response?.status === 'ok') {
             throw new Error('Failed to connect to server');
         }
         
@@ -340,12 +462,67 @@ setupForm.addEventListener('submit', async (e) => {
             fetchTags()
         ]);
     } catch (err) {
+        console.error('Error during setup:', err);
         updateSetupStatus(err.message, 'error');
     } finally {
         setLoading(false);
     }
 });
 
+// Use event delegation for dynamic content
+bookmarksList.addEventListener('click', (e) => {
+    const button = e.target.closest('button');
+    if (!button) return;
+
+    const id = button.dataset.id;
+    if (!id) return;
+
+    if (button.classList.contains('favorite-btn')) {
+        const favourited = button.dataset.favourited !== 'true';
+        toggleFavorite(id, favourited);
+    } else if (button.classList.contains('archive-btn')) {
+        const archived = button.dataset.archived !== 'true';
+        toggleArchived(id, archived);
+    } else if (button.classList.contains('delete-btn')) {
+        deleteBookmark(id);
+    }
+});
+
+listsContainer.addEventListener('click', (e) => {
+    const listItem = e.target.closest('.list-item');
+    const deleteBtn = e.target.closest('.delete-list-btn');
+    
+    if (deleteBtn) {
+        const id = deleteBtn.dataset.id;
+        if (id) {
+            deleteList(id);
+        }
+    } else if (listItem) {
+        const id = listItem.dataset.id;
+        if (id) {
+            filterByList(id);
+        }
+    }
+});
+
+tagsContainer.addEventListener('click', (e) => {
+    const tagItem = e.target.closest('.tag-item');
+    const deleteBtn = e.target.closest('.delete-tag-btn');
+    
+    if (deleteBtn) {
+        const id = deleteBtn.dataset.id;
+        if (id) {
+            deleteTag(id);
+        }
+    } else if (tagItem) {
+        const id = tagItem.dataset.id;
+        if (id) {
+            filterByTag(id);
+        }
+    }
+});
+
+// Form Handlers
 listForm.addEventListener('submit', async (e) => {
     e.preventDefault();
     
@@ -358,6 +535,7 @@ listForm.addEventListener('submit', async (e) => {
         closeListModal();
         showToast('List created successfully');
     } catch (err) {
+        console.error('Error creating list:', err);
         showToast(err.message, 'error');
     }
 });
@@ -378,6 +556,7 @@ assetForm.addEventListener('submit', async (e) => {
     }
 });
 
+// Button Event Listeners
 searchBtn.addEventListener('click', () => {
     activeFilters.searchQuery = searchInput.value;
     fetchBookmarks(true);
@@ -395,10 +574,38 @@ showArchivedBtn.addEventListener('click', () => {
     fetchBookmarks(true);
 });
 
+exportBtn.addEventListener('click', exportBookmarks);
+
 loadMoreBtn.addEventListener('click', () => {
     if (!nextCursor) return;
     fetchBookmarks();
 });
+
+newListBtn.addEventListener('click', showListModal);
+
+// Settings Event Listeners
+settingsBtn.addEventListener('click', showSettings);
+backBtn.addEventListener('click', hideSettings);
+themeToggle.addEventListener('change', toggleTheme);
+
+changeServerBtn.addEventListener('click', () => {
+    setupSection.classList.remove('hidden');
+    mainContent.classList.add('hidden');
+    settingsPage.classList.add('hidden');
+});
+
+changeApiKeyBtn.addEventListener('click', () => {
+    setupSection.classList.remove('hidden');
+    mainContent.classList.add('hidden');
+    settingsPage.classList.add('hidden');
+});
+
+exportDataBtn.addEventListener('click', exportBookmarks);
+
+// Modal Cancel Buttons
+cancelListBtn.addEventListener('click', closeListModal);
+cancelBookmarkBtn.addEventListener('click', closeBookmarkModal);
+cancelAssetBtn.addEventListener('click', closeAssetModal);
 
 // List and Tag Filters
 function filterByList(listId) {
@@ -434,17 +641,9 @@ const config = getConfig();
 if (config) {
     serverUrlInput.value = config.serverUrl;
     apiKeyInput.value = config.apiKey;
-    setupForm.dispatchEvent(new Event('submit'));
+    setupForm.requestSubmit();
 }
 
-// Make functions available globally for onclick handlers
-window.toggleFavorite = toggleFavorite;
-window.toggleArchived = toggleArchived;
-window.deleteBookmark = deleteBookmark;
-window.exportBookmarks = exportBookmarks;
-window.showCreateListModal = showCreateListModal;
-window.closeListModal = closeListModal;
-window.closeBookmarkModal = closeBookmarkModal;
-window.closeAssetModal = closeAssetModal;
-window.filterByList = filterByList;
-window.filterByTag = filterByTag;
+// Initialize theme
+setTheme(getTheme());
+themeToggle.checked = getTheme() === 'dark';
