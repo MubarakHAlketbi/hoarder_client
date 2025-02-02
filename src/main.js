@@ -169,6 +169,14 @@ function closeAssetModal() {
 }
 
 // Helper Functions
+function formatFileSize(bytes) {
+    if (bytes === 0) return '0 B';
+    const k = 1024;
+    const sizes = ['B', 'KB', 'MB', 'GB'];
+    const i = Math.floor(Math.log(bytes) / Math.log(k));
+    return `${parseFloat((bytes / Math.pow(k, i)).toFixed(1))} ${sizes[i]}`;
+}
+
 function getBookmarksFromResponse(response) {
     if (!response) return [];
     
@@ -366,22 +374,78 @@ function renderBookmarks() {
         }
         return `
             <div class="bookmark-card" data-id="${bookmark.id}">
-                <a href="${bookmark.url || '#'}" class="bookmark-title" target="_blank">
-                    ${bookmark.title || 'Untitled'}
-                </a>
-                <div class="bookmark-url">${bookmark.url || ''}</div>
-                <div class="bookmark-actions">
-                    <button type="button" class="icon-btn favorite-btn ${bookmark.favourited ? 'active' : ''}"
-                        data-id="${bookmark.id}" data-favourited="${bookmark.favourited || false}">
-                        ${bookmark.favourited ? '★' : '☆'}
-                    </button>
-                    <button type="button" class="icon-btn archive-btn ${bookmark.archived ? 'active' : ''}"
-                        data-id="${bookmark.id}" data-archived="${bookmark.archived || false}">
-                        ${bookmark.archived ? '📁' : '📂'}
-                    </button>
-                    <button type="button" class="icon-btn edit-btn" data-id="${bookmark.id}">✏️</button>
-                    <button type="button" class="icon-btn delete-btn" data-id="${bookmark.id}">🗑️</button>
+                <div class="bookmark-content">
+                    <a href="${bookmark.url || '#'}" class="bookmark-title" target="_blank">
+                        ${bookmark.title || 'Untitled'}
+                    </a>
+                    <div class="bookmark-url">${bookmark.url || ''}</div>
+                    <div class="bookmark-actions">
+                        <button type="button" class="icon-btn favorite-btn ${bookmark.favourited ? 'active' : ''}"
+                            data-id="${bookmark.id}" data-favourited="${bookmark.favourited || false}"
+                            data-tooltip="${bookmark.favourited ? 'Remove from Favorites' : 'Add to Favorites'}">
+                            ${bookmark.favourited ? '★' : '☆'}
+                        </button>
+                        <button type="button" class="icon-btn archive-btn ${bookmark.archived ? 'active' : ''}"
+                            data-id="${bookmark.id}" data-archived="${bookmark.archived || false}"
+                            data-tooltip="${bookmark.archived ? 'Unarchive' : 'Archive'}">
+                            ${bookmark.archived ? '📁' : '📂'}
+                        </button>
+                        <button type="button" class="icon-btn edit-btn" data-id="${bookmark.id}"
+                            data-tooltip="Edit">✏️</button>
+                        <button type="button" class="icon-btn delete-btn" data-id="${bookmark.id}"
+                            data-tooltip="Delete">🗑️</button>
+                    </div>
+                    <div class="bookmark-metadata">
+                        <div class="metadata-item">
+                            <span class="metadata-label">Created:</span>
+                            <span class="metadata-value">${new Date(bookmark.createdAt).toLocaleString()}</span>
+                        </div>
+                        <div class="metadata-item">
+                            <span class="metadata-label">Last Updated:</span>
+                            <span class="metadata-value">${new Date(bookmark.updatedAt).toLocaleString()}</span>
+                        </div>
+                        ${bookmark.description ? `
+                            <div class="metadata-item">
+                                <span class="metadata-label">Description:</span>
+                                <span class="metadata-value">${bookmark.description}</span>
+                            </div>
+                        ` : ''}
+                        ${bookmark.lists?.length ? `
+                            <div class="metadata-item">
+                                <span class="metadata-label">Lists:</span>
+                                <div class="metadata-tags">
+                                    ${bookmark.lists.map(list => `
+                                        <span class="metadata-tag">${list.name}</span>
+                                    `).join('')}
+                                </div>
+                            </div>
+                        ` : ''}
+                        ${bookmark.tags?.length ? `
+                            <div class="metadata-item">
+                                <span class="metadata-label">Tags:</span>
+                                <div class="metadata-tags">
+                                    ${bookmark.tags.map(tag => `
+                                        <span class="metadata-tag">${tag.name}</span>
+                                    `).join('')}
+                                </div>
+                            </div>
+                        ` : ''}
+                        ${bookmark.assets?.length ? `
+                            <div class="metadata-item">
+                                <span class="metadata-label">Assets:</span>
+                                <div class="metadata-assets">
+                                    ${bookmark.assets.map(asset => `
+                                        <div class="asset-item">
+                                            <span class="asset-name">${asset.fileName}</span>
+                                            <span class="asset-size">${formatFileSize(asset.size)}</span>
+                                        </div>
+                                    `).join('')}
+                                </div>
+                            </div>
+                        ` : ''}
+                    </div>
                 </div>
+                <div class="bookmark-expand"></div>
             </div>
         `;
     }).join('');
@@ -472,19 +536,28 @@ setupForm.addEventListener('submit', async (e) => {
 // Use event delegation for dynamic content
 bookmarksList.addEventListener('click', (e) => {
     const button = e.target.closest('button');
-    if (!button) return;
+    const card = e.target.closest('.bookmark-card');
+    
+    // Handle button clicks
+    if (button) {
+        const id = button.dataset.id;
+        if (!id) return;
 
-    const id = button.dataset.id;
-    if (!id) return;
+        if (button.classList.contains('favorite-btn')) {
+            const favourited = button.dataset.favourited !== 'true';
+            toggleFavorite(id, favourited);
+        } else if (button.classList.contains('archive-btn')) {
+            const archived = button.dataset.archived !== 'true';
+            toggleArchived(id, archived);
+        } else if (button.classList.contains('delete-btn')) {
+            deleteBookmark(id);
+        }
+        return;
+    }
 
-    if (button.classList.contains('favorite-btn')) {
-        const favourited = button.dataset.favourited !== 'true';
-        toggleFavorite(id, favourited);
-    } else if (button.classList.contains('archive-btn')) {
-        const archived = button.dataset.archived !== 'true';
-        toggleArchived(id, archived);
-    } else if (button.classList.contains('delete-btn')) {
-        deleteBookmark(id);
+    // Handle card expansion
+    if (card && !e.target.closest('a') && !e.target.closest('button')) {
+        card.classList.toggle('expanded');
     }
 });
 

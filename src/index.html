@@ -33,13 +33,13 @@
         <div class="toolbar">
             <div class="search-bar">
                 <input type="text" id="search" placeholder="Search bookmarks...">
-                <button type="button" id="search-btn" class="icon-btn">🔍</button>
+                <button type="button" id="search-btn" class="icon-btn" data-tooltip="Search">🔍</button>
             </div>
             <div class="toolbar-actions">
-                <button type="button" id="show-favorites" class="icon-btn">⭐</button>
-                <button type="button" id="show-archived" class="icon-btn">📁</button>
-                <button type="button" id="export-btn" class="icon-btn">📥</button>
-                <button type="button" id="settings-btn" class="icon-btn">⚙️</button>
+                <button type="button" id="show-favorites" class="icon-btn" data-tooltip="Show Favorites">⭐</button>
+                <button type="button" id="show-archived" class="icon-btn" data-tooltip="Show Archived">📁</button>
+                <button type="button" id="export-btn" class="icon-btn" data-tooltip="Export">📥</button>
+                <button type="button" id="settings-btn" class="icon-btn" data-tooltip="Settings">⚙️</button>
             </div>
         </div>
 
@@ -49,7 +49,7 @@
             <section class="lists-section">
                 <div class="section-header">
                     <h2>Lists</h2>
-                    <button type="button" id="new-list-btn" class="icon-btn">+</button>
+                    <button type="button" id="new-list-btn" data-tooltip="Add New List">+</button>
                 </div>
                 <div id="lists-container">
                     <div class="loading-skeleton"></div>

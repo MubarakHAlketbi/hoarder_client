@@ -47,6 +47,10 @@
     --radius-md: 0.5rem;
     --radius-lg: 1rem;
     --radius-full: 9999px;
+
+    /* Tooltip */
+    --tooltip-bg: rgba(0, 0, 0, 0.8);
+    --tooltip-text: white;
 }
 
 /* Default Dark Theme */
@@ -169,11 +173,22 @@ body {
     margin-bottom: var(--space-md);
     transition: all var(--transition-normal);
     border: 1px solid var(--border);
+    cursor: pointer;
 }
 
 .bookmark-card:hover {
     transform: translateY(-2px);
     box-shadow: 0 4px 12px var(--shadow);
+}
+
+.bookmark-content {
+    overflow: hidden;
+    transition: max-height var(--transition-normal);
+    max-height: 100px;
+}
+
+.bookmark-card.expanded .bookmark-content {
+    max-height: 800px;
 }
 
 .bookmark-title {
@@ -200,6 +215,135 @@ body {
     display: flex;
     gap: var(--space-sm);
     margin-top: var(--space-md);
+    margin-bottom: var(--space-md);
+}
+
+.bookmark-metadata {
+    display: none;
+    border-top: 1px solid var(--border);
+    padding-top: var(--space-md);
+    opacity: 0;
+    transition: opacity var(--transition-normal);
+}
+
+.bookmark-card.expanded .bookmark-metadata {
+    display: block;
+    opacity: 1;
+}
+
+.metadata-item {
+    margin-bottom: var(--space-md);
+}
+
+.metadata-label {
+    display: block;
+    font-size: 0.875rem;
+    font-weight: 500;
+    color: var(--text-secondary);
+    margin-bottom: var(--space-xs);
+}
+
+.metadata-value {
+    font-size: 0.9375rem;
+    color: var(--text);
+}
+
+.metadata-tags {
+    display: flex;
+    flex-wrap: wrap;
+    gap: var(--space-xs);
+}
+
+.metadata-tag {
+    font-size: 0.8125rem;
+    padding: var(--space-xs) var(--space-sm);
+    background: var(--hover);
+    color: var(--text);
+    border-radius: var(--radius-sm);
+}
+
+.metadata-assets {
+    display: flex;
+    flex-direction: column;
+    gap: var(--space-xs);
+}
+
+.asset-item {
+    display: flex;
+    align-items: center;
+    justify-content: space-between;
+    padding: var(--space-xs) var(--space-sm);
+    background: var(--hover);
+    border-radius: var(--radius-sm);
+}
+
+.asset-name {
+    font-size: 0.875rem;
+    color: var(--text);
+}
+
+.asset-size {
+    font-size: 0.8125rem;
+    color: var(--text-secondary);
+}
+
+.bookmark-expand {
+    display: flex;
+    align-items: center;
+    justify-content: center;
+    width: 100%;
+    padding: var(--space-xs) 0;
+    color: var(--text-secondary);
+    font-size: 0.875rem;
+    margin-top: var(--space-sm);
+    border-top: 1px solid var(--border);
+    transition: color var(--transition-fast);
+}
+
+.bookmark-expand:hover {
+    color: var(--text);
+}
+
+.bookmark-expand:before {
+    content: "Show more";
+}
+
+.bookmark-card.expanded .bookmark-expand:before {
+    content: "Show less";
+}
+
+/* Section Headers */
+.section-header {
+    display: flex;
+    align-items: center;
+    justify-content: space-between;
+    margin-bottom: var(--space-md);
+    padding-right: 40px;
+    position: relative;
+}
+
+#new-list-btn {
+    position: absolute;
+    right: 0;
+    top: 50%;
+    transform: translateY(-50%);
+    width: 28px;
+    height: 28px;
+    padding: 0;
+    display: flex;
+    align-items: center;
+    justify-content: center;
+    border-radius: var(--radius-full);
+    background: var(--primary);
+    color: white;
+    border: none;
+    font-size: 1.2rem;
+    transition: all var(--transition-fast);
+}
+
+#new-list-btn:hover {
+    transform: translateY(-50%) scale(1.1);
+    filter: brightness(1.1);
 }
 
 /* Buttons */
@@ -235,6 +379,7 @@ button:disabled {
     background: transparent;
     color: var(--text);
     border: 1px solid var(--border);
+    position: relative;
 }
 
 .icon-btn:hover {
@@ -245,6 +390,36 @@ button:disabled {
     background: var(--primary);
     color: white;
     border-color: var(--primary);
+}
+
+/* Tooltips */
+[data-tooltip] {
+    position: relative;
+}
+
+[data-tooltip]:before {
+    content: attr(data-tooltip);
+    position: absolute;
+    bottom: 100%;
+    left: 50%;
+    transform: translateX(-50%) translateY(-5px);
+    padding: var(--space-xs) var(--space-sm);
+    background: var(--tooltip-bg);
+    color: var(--tooltip-text);
+    font-size: 0.875rem;
+    border-radius: var(--radius-sm);
+    white-space: nowrap;
+    opacity: 0;
+    visibility: hidden;
+    transition: all var(--transition-fast);
+    pointer-events: none;
+    z-index: 1000;
+}
+
+[data-tooltip]:hover:before {
+    opacity: 1;
+    visibility: visible;
+    transform: translateX(-50%) translateY(-10px);
 }
 
 /* Lists & Tags */
