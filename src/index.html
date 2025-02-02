@@ -3,58 +3,128 @@
 <head>
     <meta charset="UTF-8">
     <meta name="viewport" content="width=device-width, initial-scale=1.0">
-    <title>Hoarder Web Client</title>
+    <title>Hoarder Client</title>
     <link rel="stylesheet" href="styles.css">
 </head>
 <body>
     <!-- Setup Section -->
     <section id="setup-section">
-        <h1>Hoarder Web Client</h1>
+        <h1>Hoarder Setup</h1>
         <form id="setup-form">
             <div class="form-group">
                 <label for="server-url">Server URL</label>
-                <input type="url" id="server-url" placeholder="https://api.example.com" required>
+                <input type="url" id="server-url" required placeholder="https://your-hoarder-server.com">
             </div>
             <div class="form-group">
                 <label for="api-key">API Key</label>
-                <input type="password" id="api-key" placeholder="ak1_xxxxx_xxxxx" required>
+                <input type="password" id="api-key" required placeholder="ak1_...">
             </div>
-            <button type="submit" id="configure-btn">Configure</button>
-            <p id="setup-message"></p>
+            <button type="submit">Connect</button>
+            <div id="setup-message"></div>
         </form>
     </section>
 
     <!-- Main Content -->
     <main id="main-content" class="hidden">
-        <!-- Search and Filters -->
-        <section id="controls">
+        <!-- Toolbar -->
+        <div class="toolbar">
             <div class="search-bar">
-                <input type="search" id="search" placeholder="Search bookmarks...">
-                <button id="search-btn">Search</button>
+                <input type="text" id="search" placeholder="Search bookmarks...">
+                <button id="search-btn">🔍</button>
             </div>
             <div class="filters">
-                <button id="show-favorites" class="filter-btn">Favorites</button>
-                <button id="show-archived" class="filter-btn">Archived</button>
+                <button id="show-favorites">⭐ Favorites</button>
+                <button id="show-archived">📁 Archived</button>
+                <button onclick="exportBookmarks()">📥 Export</button>
             </div>
-            <button id="new-bookmark-btn" class="primary-btn">Add Bookmark</button>
-        </section>
+        </div>
 
-        <!-- Bookmarks List -->
-        <section id="bookmarks-section">
+        <!-- Sidebar -->
+        <div class="sidebar">
+            <!-- Lists Section -->
+            <section class="lists-section">
+                <h2>Lists</h2>
+                <button onclick="showCreateListModal()">+ New List</button>
+                <div id="lists-container"></div>
+            </section>
+
+            <!-- Tags Section -->
+            <section class="tags-section">
+                <h2>Tags</h2>
+                <div id="tags-container"></div>
+            </section>
+        </div>
+
+        <!-- Main Content Area -->
+        <div class="content-area">
+            <!-- Bookmarks List -->
             <div id="bookmarks-list"></div>
-            <button id="load-more" class="secondary-btn hidden">Load More</button>
-        </section>
+            <button id="load-more" class="hidden">Load More</button>
+        </div>
+
+        <!-- Highlights Panel -->
+        <div class="highlights-panel hidden" id="highlights-panel">
+            <h2>Highlights</h2>
+            <div id="highlights-container"></div>
+        </div>
     </main>
 
-    <!-- Toast Messages -->
-    <div id="toast" class="toast hidden"></div>
+    <!-- Modals -->
+    <!-- Create/Edit List Modal -->
+    <div id="list-modal" class="modal hidden">
+        <div class="modal-content">
+            <h2 id="list-modal-title">Create List</h2>
+            <form id="list-form">
+                <input type="text" id="list-name" required placeholder="List name">
+                <div class="modal-actions">
+                    <button type="button" onclick="closeListModal()">Cancel</button>
+                    <button type="submit">Save</button>
+                </div>
+            </form>
+        </div>
+    </div>
+
+    <!-- Edit Bookmark Modal -->
+    <div id="bookmark-modal" class="modal hidden">
+        <div class="modal-content">
+            <h2>Edit Bookmark</h2>
+            <form id="bookmark-form">
+                <input type="text" id="bookmark-title" required placeholder="Title">
+                <input type="url" id="bookmark-url" required placeholder="URL">
+                <div class="tags-input">
+                    <input type="text" id="tag-input" placeholder="Add tags...">
+                    <div id="selected-tags"></div>
+                </div>
+                <div class="modal-actions">
+                    <button type="button" onclick="closeBookmarkModal()">Cancel</button>
+                    <button type="submit">Save</button>
+                </div>
+            </form>
+        </div>
+    </div>
+
+    <!-- Asset Upload Modal -->
+    <div id="asset-modal" class="modal hidden">
+        <div class="modal-content">
+            <h2>Upload Asset</h2>
+            <form id="asset-form">
+                <input type="file" id="asset-file" required>
+                <div class="modal-actions">
+                    <button type="button" onclick="closeAssetModal()">Cancel</button>
+                    <button type="submit">Upload</button>
+                </div>
+            </form>
+        </div>
+    </div>
 
     <!-- Loading Overlay -->
     <div id="loading-overlay" class="hidden">
         <div class="spinner"></div>
-        <p>Loading...</p>
     </div>
 
-    <script type="module" src="/main.js"></script>
+    <!-- Toast Messages -->
+    <div id="toast" class="hidden"></div>
+
+    <script type="module" src="main.js"></script>
 </body>
 </html>
