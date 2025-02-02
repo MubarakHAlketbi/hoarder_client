@@ -1,53 +1,69 @@
-# Hoarder Client
+# Hoarder Web Client
 
-Hoarder Client is a cross-platform desktop application for managing bookmarks, built with Tauri, Rust, and vanilla JavaScript. It serves as a client for the Hoarder bookmark management service, providing a user-friendly and performant interface for managing bookmarks, lists, tags, and highlights.
+A simple, efficient web client for the Hoarder bookmark management service.
+
+## Features
+
+- API key-based authentication
+- Bookmark management (view, add, edit, delete)
+- Search and filtering
+- Favorites and archive support
+- Responsive design
 
 ## Getting Started
 
-### Prerequisites
-
--   [Node.js](https://nodejs.org/) (which includes npm)
--   [Rust](https://www.rust-lang.org/tools/install)
--   [Tauri CLI](https://tauri.app/v1/guides/getting-started/prerequisites)
-
-### Installation
-
 1. Clone the repository:
-
-    ```bash
-    git clone <repository-url>
-    ```
+```bash
+git clone https://github.com/yourusername/hoarder-web-client.git
+cd hoarder-web-client
+```
 
 2. Install dependencies:
-
-    ```bash
-    npm install
-    ```
-
-### Development
-
-To start the application in development mode, run:
-
 ```bash
-npm run tauri dev
+npm install
 ```
 
-This will start the Tauri development server and open the application in a new window.
-
-### Building
-
-To build the application for production, run:
-
+3. Start the development server:
 ```bash
-npm run tauri build
+npm start
 ```
 
-This will create an optimized build of the application in the `src-tauri/target/release` directory.
+4. Open http://localhost:3000 in your browser
 
-## Contributing
+## Configuration
 
-Contributions are welcome! Please read the [CONTRIBUTING.md](CONTRIBUTING.md) file for guidelines on how to contribute.
+The application requires:
+- Server URL (e.g., https://hoarder.sato942.com)
+- API Key (format: ak1_xxxxx_xxxxx)
+
+These are stored securely in your browser's localStorage.
+
+## Project Structure
+
+```
+hoarder-web-client/
+├── src/
+│   ├── index.html    # Main HTML file
+│   ├── styles.css    # Styles
+│   └── main.js       # Application logic
+├── package.json      # Project configuration
+└── README.md        # This file
+```
+
+## Development
+
+- Pure HTML/CSS/JavaScript
+- No build tools required
+- Modern browser features
+- LocalStorage for configuration
+
+## Security
+
+- HTTPS only
+- Secure API key storage
+- Input validation
+- Error handling
 
 ## License
 
-This project is licensed under the MIT License - see the [LICENSE](LICENSE) file for details.
+MIT

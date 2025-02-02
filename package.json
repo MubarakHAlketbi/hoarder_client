@@ -1,14 +1,21 @@
 {
-  "name": "hoarder_client",
+  "name": "hoarder-web-client",
   "private": true,
   "version": "0.1.0",
   "type": "module",
   "scripts": {
-    "dev": "tauri dev",
-    "build": "tauri build",
-    "tauri": "tauri"
+    "dev": "vite",
+    "build": "vite build",
+    "preview": "vite preview"
+  },
+  "dependencies": {
+    "@hoarderapp/sdk": "latest",
+    "@hoarderapp/cli": "latest"
   },
   "devDependencies": {
-    "@tauri-apps/cli": "^2.2.7"
-  }
+    "vite": "^5.0.0"
+  },
+  "description": "A simple web client for the Hoarder bookmark management service",
+  "author": "",
+  "license": "MIT"
 }

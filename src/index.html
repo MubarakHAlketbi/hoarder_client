@@ -3,120 +3,58 @@
 <head>
     <meta charset="UTF-8">
     <meta name="viewport" content="width=device-width, initial-scale=1.0">
-    <title>Hoarder Client</title>
+    <title>Hoarder Web Client</title>
     <link rel="stylesheet" href="styles.css">
 </head>
 <body>
-    <div id="app">
-        <header>
-            <h1>Hoarder Client</h1>
-            
-            <div id="setup-section" class="auth-form">
-                <h2>Server Configuration</h2>
-                
-                <div class="step-indicator">
-                    <div class="step active" data-step="1" title="Server URL">1</div>
-                    <div class="step" data-step="2" title="API Key">2</div>
-                    <div class="step" data-step="3" title="Connection Test">3</div>
-                </div>
-
-                <div class="form-group">
-                    <input 
-                        type="url" 
-                        id="server-url" 
-                        value="https://hoarder.sato942.com"
-                        placeholder="Enter server URL" 
-                        pattern="https?:\/\/.+"
-                        title="Please enter a valid URL starting with http:// or https://"
-                        required
-                    >
-                    <input 
-                        type="text" 
-                        id="api-key" 
-                        placeholder="Enter your API key"
-                        pattern="ak1_[a-zA-Z0-9]+_[a-zA-Z0-9]+"
-                        title="API key format: ak1_xxxxx_xxxxx"
-                        required
-                    >
-                </div>
-                <button id="configure-btn">Connect</button>
-                <div id="setup-message"></div>
+    <!-- Setup Section -->
+    <section id="setup-section">
+        <h1>Hoarder Web Client</h1>
+        <form id="setup-form">
+            <div class="form-group">
+                <label for="server-url">Server URL</label>
+                <input type="url" id="server-url" placeholder="https://api.example.com" required>
             </div>
-        </header>
+            <div class="form-group">
+                <label for="api-key">API Key</label>
+                <input type="password" id="api-key" placeholder="ak1_xxxxx_xxxxx" required>
+            </div>
+            <button type="submit" id="configure-btn">Configure</button>
+            <p id="setup-message"></p>
+        </form>
+    </section>
 
-        <div id="main-content" class="hidden">
-            <nav id="sidebar">
-                <div class="search-container">
-                    <input type="text" id="search" placeholder="Search bookmarks...">
-                    <button id="search-btn">Search</button>
-                </div>
-                
-                <div class="filter-container">
-                    <button id="show-favorites" class="filter-btn">Favorites</button>
-                    <button id="show-archived" class="filter-btn">Archived</button>
-                </div>
+    <!-- Main Content -->
+    <main id="main-content" class="hidden">
+        <!-- Search and Filters -->
+        <section id="controls">
+            <div class="search-bar">
+                <input type="search" id="search" placeholder="Search bookmarks...">
+                <button id="search-btn">Search</button>
+            </div>
+            <div class="filters">
+                <button id="show-favorites" class="filter-btn">Favorites</button>
+                <button id="show-archived" class="filter-btn">Archived</button>
+            </div>
+            <button id="new-bookmark-btn" class="primary-btn">Add Bookmark</button>
+        </section>
 
-                <div class="lists-container">
-                    <h2>Lists</h2>
-                    <button id="new-list-btn">New List</button>
-                    <ul id="lists"></ul>
-                </div>
+        <!-- Bookmarks List -->
+        <section id="bookmarks-section">
+            <div id="bookmarks-list"></div>
+            <button id="load-more" class="secondary-btn hidden">Load More</button>
+        </section>
+    </main>
 
-                <div class="tags-container">
-                    <h2>Tags</h2>
-                    <div class="tag-input-container">
-                        <input type="text" id="new-tag" placeholder="New tag name">
-                        <button id="add-tag-btn">Add</button>
-                    </div>
-                    <div id="tags"></div>
-                </div>
-            </nav>
+    <!-- Toast Messages -->
+    <div id="toast" class="toast hidden"></div>
 
-            <main>
-                <div class="toolbar">
-                    <button id="new-bookmark-btn">New Bookmark</button>
-                    <button id="import-singlefile-btn">Import SingleFile</button>
-                </div>
-
-                <section id="bookmarks-container">
-                    <div id="bookmarks-list"></div>
-                    <div id="load-more" class="hidden">Load More</div>
-                </section>
-
-                <div id="bookmark-modal" class="modal hidden">
-                    <div class="modal-content">
-                        <h2>Add/Edit Bookmark</h2>
-                        <input type="text" id="bookmark-url" placeholder="URL">
-                        <input type="text" id="bookmark-title" placeholder="Title">
-                        <div class="bookmark-options">
-                            <label>
-                                <input type="checkbox" id="bookmark-favorite">
-                                Favorite
-                            </label>
-                            <label>
-                                <input type="checkbox" id="bookmark-archive">
-                                Archive
-                            </label>
-                        </div>
-                        <div class="bookmark-tags">
-                            <h3>Tags</h3>
-                            <div id="bookmark-tags-list"></div>
-                        </div>
-                        <div class="bookmark-lists">
-                            <h3>Lists</h3>
-                            <div id="bookmark-lists-list"></div>
-                        </div>
-                        <div class="modal-actions">
-                            <button id="save-bookmark">Save</button>
-                            <button id="cancel-bookmark">Cancel</button>
-                        </div>
-                    </div>
-                </div>
-            </main>
-        </div>
-
-        <div id="toast" class="hidden"></div>
+    <!-- Loading Overlay -->
+    <div id="loading-overlay" class="hidden">
+        <div class="spinner"></div>
+        <p>Loading...</p>
     </div>
-    <script src="main.js"></script>
+
+    <script type="module" src="/main.js"></script>
 </body>
 </html>
