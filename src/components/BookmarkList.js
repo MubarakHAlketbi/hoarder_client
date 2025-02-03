@@ -25,14 +25,14 @@ export class BookmarkList extends HTMLElement {
 	setupIntersectionObserver() {
 		this.intersectionObserver = new IntersectionObserver(
 			(entries) => {
-				entries.forEach((entry) => {
+				for (const entry of entries) {
 					if (entry.isIntersecting) {
 						const state = store.getState();
 						if (!state.isLoading && state.nextCursor) {
 							store.dispatch("fetchMoreBookmarks");
 						}
 					}
-				});
+				}
 			},
 			{
 				rootMargin: "100px",
@@ -171,9 +171,9 @@ export class BookmarkList extends HTMLElement {
 				-CONSTANTS.BUFFER_SIZE,
 			);
 
-			lastItems.forEach((item) => {
+			for (const item of lastItems) {
 				this.intersectionObserver.observe(item);
-			});
+			}
 		}
 	}
 }

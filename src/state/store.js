@@ -46,7 +46,9 @@ class Store {
 	}
 
 	notify() {
-		this.listeners.forEach((listener) => listener(this.state));
+		for (const listener of this.listeners) {
+			listener(this.state);
+		}
 	}
 
 	// Bookmark actions

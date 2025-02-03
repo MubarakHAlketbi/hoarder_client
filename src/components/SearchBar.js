@@ -98,7 +98,7 @@ export class SearchBar extends HTMLElement {
 		const input = this.shadowRoot.querySelector(".search-input");
 		const query = input.value.toLowerCase().trim();
 		const state = store.getState();
-		let suggestions = [];
+		const suggestions = [];
 
 		// Add recent searches
 		if (this.recentSearches.length) {

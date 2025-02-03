@@ -18,7 +18,7 @@ class ApiClient {
 			} catch (err) {
 				lastError = err;
 				if (i < CONSTANTS.MAX_RETRIES - 1 && !signal?.aborted) {
-					const delay = CONSTANTS.RETRY_DELAY * Math.pow(2, i);
+					const delay = CONSTANTS.RETRY_DELAY * (2 ** i);
 					await new Promise((resolve) => setTimeout(resolve, delay));
 				}
 			}

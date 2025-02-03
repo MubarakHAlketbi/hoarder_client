@@ -9,11 +9,11 @@ export class HoarderAPI {
 
 		// Add query parameters if provided
 		if (options.params) {
-			Object.entries(options.params).forEach(([key, value]) => {
+			for (const [key, value] of Object.entries(options.params)) {
 				if (value !== undefined) {
 					url.searchParams.append(key, value);
 				}
-			});
+			}
 		}
 
 		const headers = {
