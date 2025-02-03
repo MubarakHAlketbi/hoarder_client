@@ -1,115 +1,118 @@
-import { store } from '../state/store.js';
-import { CONSTANTS, debounce } from '../utils/helpers.js';
-import './BookmarkCard.js';
+import { store } from "../state/store.js";
+import { CONSTANTS, debounce } from "../utils/helpers.js";
+import "./BookmarkCard.js";
 
 export class BookmarkList extends HTMLElement {
-    constructor() {
-        super();
-        this.attachShadow({ mode: 'open' });
-        this.renderedItems = new Map();
-        this.intersectionObserver = null;
-        this.setupIntersectionObserver();
-    }
+	constructor() {
+		super();
+		this.attachShadow({ mode: "open" });
+		this.renderedItems = new Map();
+		this.intersectionObserver = null;
+		this.setupIntersectionObserver();
+	}
 
-    connectedCallback() {
-        this.render();
-        this.setupEventListeners();
-        store.subscribe(this.handleStateChange.bind(this));
-    }
+	connectedCallback() {
+		this.render();
+		this.setupEventListeners();
+		store.subscribe(this.handleStateChange.bind(this));
+	}
 
-    disconnectedCallback() {
-        this.removeEventListeners();
-        this.intersectionObserver?.disconnect();
-    }
+	disconnectedCallback() {
+		this.removeEventListeners();
+		this.intersectionObserver?.disconnect();
+	}
 
-    setupIntersectionObserver() {
-        this.intersectionObserver = new IntersectionObserver(
-            entries => {
-                entries.forEach(entry => {
-                    if (entry.isIntersecting) {
-                        const state = store.getState();
-                        if (!state.isLoading && state.nextCursor) {
-                            store.dispatch('fetchMoreBookmarks');
-                        }
-                    }
-                });
-            },
-            {
-                rootMargin: '100px',
-                threshold: 0.1
-            }
-        );
-    }
+	setupIntersectionObserver() {
+		this.intersectionObserver = new IntersectionObserver(
+			(entries) => {
+				entries.forEach((entry) => {
+					if (entry.isIntersecting) {
+						const state = store.getState();
+						if (!state.isLoading && state.nextCursor) {
+							store.dispatch("fetchMoreBookmarks");
+						}
+					}
+				});
+			},
+			{
+				rootMargin: "100px",
+				threshold: 0.1,
+			},
+		);
+	}
 
-    setupEventListeners() {
-        this.shadowRoot.addEventListener('scroll', 
-            debounce(this.handleScroll.bind(this), 100)
-        );
-    }
+	setupEventListeners() {
+		this.shadowRoot.addEventListener(
+			"scroll",
+			debounce(this.handleScroll.bind(this), 100),
+		);
+	}
 
-    removeEventListeners() {
-        this.shadowRoot.removeEventListener('scroll', this.handleScroll.bind(this));
-    }
+	removeEventListeners() {
+		this.shadowRoot.removeEventListener("scroll", this.handleScroll.bind(this));
+	}
 
-    handleStateChange(state) {
-        this.render();
-    }
+	handleStateChange(state) {
+		this.render();
+	}
 
-    handleScroll() {
-        requestAnimationFrame(() => this.updateVisibleItems());
-    }
+	handleScroll() {
+		requestAnimationFrame(() => this.updateVisibleItems());
+	}
 
-    getVisibleRange() {
-        const containerHeight = this.clientHeight;
-        const scrollTop = this.scrollTop;
-        
-        const startIndex = Math.max(0, 
-            Math.floor(scrollTop / CONSTANTS.BOOKMARK_HEIGHT) - CONSTANTS.BUFFER_SIZE
-        );
-        const endIndex = Math.min(
-            store.getState().bookmarks.length,
-            Math.ceil((scrollTop + containerHeight) / CONSTANTS.BOOKMARK_HEIGHT) + CONSTANTS.BUFFER_SIZE
-        );
-        
-        return { startIndex, endIndex };
-    }
+	getVisibleRange() {
+		const containerHeight = this.clientHeight;
+		const scrollTop = this.scrollTop;
 
-    updateVisibleItems() {
-        const { startIndex, endIndex } = this.getVisibleRange();
-        const bookmarks = store.getState().bookmarks;
-        const container = this.shadowRoot.querySelector('.bookmarks-container');
+		const startIndex = Math.max(
+			0,
+			Math.floor(scrollTop / CONSTANTS.BOOKMARK_HEIGHT) - CONSTANTS.BUFFER_SIZE,
+		);
+		const endIndex = Math.min(
+			store.getState().bookmarks.length,
+			Math.ceil((scrollTop + containerHeight) / CONSTANTS.BOOKMARK_HEIGHT) +
+				CONSTANTS.BUFFER_SIZE,
+		);
 
-        // Remove items that are no longer visible
-        for (const [index, element] of this.renderedItems.entries()) {
-            if (index < startIndex || index >= endIndex) {
-                element.remove();
-                this.renderedItems.delete(index);
-            }
-        }
+		return { startIndex, endIndex };
+	}
 
-        // Add new visible items
-        for (let i = startIndex; i < endIndex; i++) {
-            if (!this.renderedItems.has(i)) {
-                const bookmark = bookmarks[i];
-                const element = document.createElement('bookmark-card');
-                element.setAttribute('data-id', bookmark.id);
-                element.setAttribute('data-position', bookmark.position || 0);
-                element.style.position = 'absolute';
-                element.style.top = `${i * CONSTANTS.BOOKMARK_HEIGHT}px`;
-                element.style.left = '0';
-                element.style.right = '0';
-                
-                container.appendChild(element);
-                this.renderedItems.set(i, element);
-            }
-        }
-    }
+	updateVisibleItems() {
+		const { startIndex, endIndex } = this.getVisibleRange();
+		const bookmarks = store.getState().bookmarks;
+		const container = this.shadowRoot.querySelector(".bookmarks-container");
 
-    render() {
-        const state = store.getState();
-        const { bookmarks, isLoading } = state;
+		// Remove items that are no longer visible
+		for (const [index, element] of this.renderedItems.entries()) {
+			if (index < startIndex || index >= endIndex) {
+				element.remove();
+				this.renderedItems.delete(index);
+			}
+		}
 
-        this.shadowRoot.innerHTML = `
+		// Add new visible items
+		for (let i = startIndex; i < endIndex; i++) {
+			if (!this.renderedItems.has(i)) {
+				const bookmark = bookmarks[i];
+				const element = document.createElement("bookmark-card");
+				element.setAttribute("data-id", bookmark.id);
+				element.setAttribute("data-position", bookmark.position || 0);
+				element.style.position = "absolute";
+				element.style.top = `${i * CONSTANTS.BOOKMARK_HEIGHT}px`;
+				element.style.left = "0";
+				element.style.right = "0";
+
+				container.appendChild(element);
+				this.renderedItems.set(i, element);
+			}
+		}
+	}
+
+	render() {
+		const state = store.getState();
+		const { bookmarks, isLoading } = state;
+
+		this.shadowRoot.innerHTML = `
             <style>
                 :host {
                     display: block;
@@ -130,37 +133,49 @@ export class BookmarkList extends HTMLElement {
                 }
             </style>
 
-            ${isLoading && !bookmarks.length ? `
+            ${
+							isLoading && !bookmarks.length
+								? `
                 <div class="loading-skeleton">
-                    ${Array(3).fill(0).map(() => `
+                    ${Array(3)
+											.fill(0)
+											.map(
+												() => `
                         <div class="bookmark-card loading-skeleton skeleton-card">
                             <div class="skeleton-header"></div>
                             <div class="skeleton-url"></div>
                             <div class="skeleton-actions"></div>
                         </div>
-                    `).join('')}
+                    `,
+											)
+											.join("")}
                 </div>
-            ` : bookmarks.length ? `
+            `
+								: bookmarks.length
+									? `
                 <div class="bookmarks-container" 
                     style="height: ${bookmarks.length * CONSTANTS.BOOKMARK_HEIGHT}px">
                 </div>
-            ` : `
+            `
+									: `
                 <div class="no-bookmarks">No bookmarks found</div>
-            `}
+            `
+						}
         `;
 
-        if (bookmarks.length) {
-            this.updateVisibleItems();
-            
-            // Observe the last few items for infinite scroll
-            const lastItems = Array.from(this.renderedItems.values())
-                .slice(-CONSTANTS.BUFFER_SIZE);
-            
-            lastItems.forEach(item => {
-                this.intersectionObserver.observe(item);
-            });
-        }
-    }
+		if (bookmarks.length) {
+			this.updateVisibleItems();
+
+			// Observe the last few items for infinite scroll
+			const lastItems = Array.from(this.renderedItems.values()).slice(
+				-CONSTANTS.BUFFER_SIZE,
+			);
+
+			lastItems.forEach((item) => {
+				this.intersectionObserver.observe(item);
+			});
+		}
+	}
 }
 
-customElements.define('bookmark-list', BookmarkList);
+customElements.define("bookmark-list", BookmarkList);

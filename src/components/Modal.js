@@ -1,106 +1,108 @@
 export class Modal extends HTMLElement {
-    constructor() {
-        super();
-        this.attachShadow({ mode: 'open' });
-        this.handleKeyDown = this.handleKeyDown.bind(this);
-        this.handleClickOutside = this.handleClickOutside.bind(this);
-        this._previouslyFocused = null;
-    }
+	constructor() {
+		super();
+		this.attachShadow({ mode: "open" });
+		this.handleKeyDown = this.handleKeyDown.bind(this);
+		this.handleClickOutside = this.handleClickOutside.bind(this);
+		this._previouslyFocused = null;
+	}
 
-    static get observedAttributes() {
-        return ['title', 'size'];
-    }
+	static get observedAttributes() {
+		return ["title", "size"];
+	}
 
-    connectedCallback() {
-        this.render();
-        this.setupEventListeners();
-    }
+	connectedCallback() {
+		this.render();
+		this.setupEventListeners();
+	}
 
-    disconnectedCallback() {
-        this.removeEventListeners();
-    }
+	disconnectedCallback() {
+		this.removeEventListeners();
+	}
 
-    attributeChangedCallback(name, oldValue, newValue) {
-        if (oldValue !== newValue) {
-            this.render();
-        }
-    }
+	attributeChangedCallback(name, oldValue, newValue) {
+		if (oldValue !== newValue) {
+			this.render();
+		}
+	}
 
-    setupEventListeners() {
-        document.addEventListener('keydown', this.handleKeyDown);
-        this.shadowRoot.addEventListener('click', this.handleClickOutside);
-        
-        // Trap focus within modal
-        const focusableElements = this.getFocusableElements();
-        if (focusableElements.length) {
-            this._previouslyFocused = document.activeElement;
-            focusableElements[0].focus();
-        }
-    }
+	setupEventListeners() {
+		document.addEventListener("keydown", this.handleKeyDown);
+		this.shadowRoot.addEventListener("click", this.handleClickOutside);
 
-    removeEventListeners() {
-        document.removeEventListener('keydown', this.handleKeyDown);
-        this.shadowRoot.removeEventListener('click', this.handleClickOutside);
-        
-        if (this._previouslyFocused) {
-            this._previouslyFocused.focus();
-            this._previouslyFocused = null;
-        }
-    }
+		// Trap focus within modal
+		const focusableElements = this.getFocusableElements();
+		if (focusableElements.length) {
+			this._previouslyFocused = document.activeElement;
+			focusableElements[0].focus();
+		}
+	}
 
-    handleKeyDown(e) {
-        if (e.key === 'Escape') {
-            this.close();
-            return;
-        }
+	removeEventListeners() {
+		document.removeEventListener("keydown", this.handleKeyDown);
+		this.shadowRoot.removeEventListener("click", this.handleClickOutside);
 
-        if (e.key === 'Tab') {
-            const focusableElements = this.getFocusableElements();
-            const firstFocusable = focusableElements[0];
-            const lastFocusable = focusableElements[focusableElements.length - 1];
+		if (this._previouslyFocused) {
+			this._previouslyFocused.focus();
+			this._previouslyFocused = null;
+		}
+	}
 
-            if (e.shiftKey) {
-                if (document.activeElement === firstFocusable) {
-                    e.preventDefault();
-                    lastFocusable.focus();
-                }
-            } else {
-                if (document.activeElement === lastFocusable) {
-                    e.preventDefault();
-                    firstFocusable.focus();
-                }
-            }
-        }
-    }
+	handleKeyDown(e) {
+		if (e.key === "Escape") {
+			this.close();
+			return;
+		}
 
-    handleClickOutside(e) {
-        if (e.target.classList.contains('modal-overlay')) {
-            this.close();
-        }
-    }
+		if (e.key === "Tab") {
+			const focusableElements = this.getFocusableElements();
+			const firstFocusable = focusableElements[0];
+			const lastFocusable = focusableElements[focusableElements.length - 1];
 
-    getFocusableElements() {
-        return Array.from(this.shadowRoot.querySelectorAll(
-            'button, [href], input, select, textarea, [tabindex]:not([tabindex="-1"])'
-        ));
-    }
+			if (e.shiftKey) {
+				if (document.activeElement === firstFocusable) {
+					e.preventDefault();
+					lastFocusable.focus();
+				}
+			} else {
+				if (document.activeElement === lastFocusable) {
+					e.preventDefault();
+					firstFocusable.focus();
+				}
+			}
+		}
+	}
 
-    show() {
-        this.classList.remove('hidden');
-        document.body.style.overflow = 'hidden';
-    }
+	handleClickOutside(e) {
+		if (e.target.classList.contains("modal-overlay")) {
+			this.close();
+		}
+	}
 
-    close() {
-        this.classList.add('hidden');
-        document.body.style.overflow = '';
-        this.dispatchEvent(new CustomEvent('modal-close'));
-    }
+	getFocusableElements() {
+		return Array.from(
+			this.shadowRoot.querySelectorAll(
+				'button, [href], input, select, textarea, [tabindex]:not([tabindex="-1"])',
+			),
+		);
+	}
 
-    render() {
-        const title = this.getAttribute('title') || '';
-        const size = this.getAttribute('size') || 'medium';
+	show() {
+		this.classList.remove("hidden");
+		document.body.style.overflow = "hidden";
+	}
 
-        this.shadowRoot.innerHTML = `
+	close() {
+		this.classList.add("hidden");
+		document.body.style.overflow = "";
+		this.dispatchEvent(new CustomEvent("modal-close"));
+	}
+
+	render() {
+		const title = this.getAttribute("title") || "";
+		const size = this.getAttribute("size") || "medium";
+
+		this.shadowRoot.innerHTML = `
             <style>
                 :host {
                     position: fixed;
@@ -221,10 +223,11 @@ export class Modal extends HTMLElement {
             </div>
         `;
 
-        // Add close button handler
-        this.shadowRoot.querySelector('.modal-close')
-            .addEventListener('click', () => this.close());
-    }
+		// Add close button handler
+		this.shadowRoot
+			.querySelector(".modal-close")
+			.addEventListener("click", () => this.close());
+	}
 }
 
-customElements.define('modal-dialog', Modal);
+customElements.define("modal-dialog", Modal);
