@@ -15,12 +15,6 @@ class App {
 	}
 
 	setupComponents() {
-		// Initialize custom elements
-		customElements.define("bookmark-card", BookmarkCard);
-		customElements.define("bookmark-list", BookmarkList);
-		customElements.define("search-bar", SearchBar);
-		customElements.define("modal-dialog", Modal);
-
 		// Add components to DOM
 		this.setupSection = document.getElementById("setup-section");
 		this.mainContent = document.getElementById("main-content");
@@ -40,6 +34,7 @@ class App {
 		const config = this.getConfig();
 		if (config) {
 			this.api = createApiClient(config.serverUrl, config.apiKey);
+			store.setApi(this.api);
 			await this.initializeApp();
 		}
 	}
@@ -77,6 +72,7 @@ class App {
 		store.setLoading(true);
 		try {
 			this.api = createApiClient(serverUrl, apiKey);
+			store.setApi(this.api);
 			await this.api.checkHealth();
 
 			this.setConfig(serverUrl, apiKey);
