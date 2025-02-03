@@ -114,11 +114,27 @@ export class HoarderAPI {
     }
 
     async searchBookmarks(query, params = {}) {
-        const { limit, cursor } = params;
+        const {
+            limit,
+            cursor,
+            dateFrom,
+            dateTo,
+            tags,
+            lists,
+            sortBy = 'createdAt',
+            sortOrder = 'desc'
+        } = params;
+
         const queryParams = {
             q: query,
             ...(limit && { limit }),
-            ...(cursor && { cursor })
+            ...(cursor && { cursor }),
+            ...(dateFrom && { dateFrom: new Date(dateFrom).toISOString() }),
+            ...(dateTo && { dateTo: new Date(dateTo).toISOString() }),
+            ...(tags?.length && { tags: tags.join(',') }),
+            ...(lists?.length && { lists: lists.join(',') }),
+            sortBy,
+            sortOrder
         };
         return this.request('/api/v1/bookmarks/search', { params: queryParams });
     }
@@ -163,6 +179,16 @@ export class HoarderAPI {
             ...(cursor && { cursor })
         };
         return this.request(`/api/v1/lists/${id}/bookmarks`, { params: queryParams });
+    }
+
+    async reorderBookmarkInList(listId, bookmarkId, targetId, position) {
+        return this.request(`/api/v1/lists/${listId}/bookmarks/${bookmarkId}/reorder`, {
+            method: 'PUT',
+            body: {
+                targetId,
+                position
+            }
+        });
     }
 
     async addBookmarkToList(listId, bookmarkId) {
@@ -245,6 +271,49 @@ export class HoarderAPI {
         return this.request(`/api/v1/bookmarks/${bookmarkId}/assets/${assetId}`, {
             method: 'DELETE'
         });
+    }
+
+    // Highlights
+    async getHighlights(params = {}) {
+        const { limit, cursor } = params;
+        const queryParams = {
+            ...(limit && { limit }),
+            ...(cursor && { cursor })
+        };
+        return this.request('/api/v1/highlights', { params: queryParams });
+    }
+
+    async createHighlight(data) {
+        return this.request('/api/v1/highlights', {
+            method: 'POST',
+            body: data
+        });
+    }
+
+    async getHighlight(id) {
+        return this.request(`/api/v1/highlights/${id}`);
+    }
+
+    async updateHighlight(id, data) {
+        return this.request(`/api/v1/highlights/${id}`, {
+            method: 'PATCH',
+            body: data
+        });
+    }
+
+    async deleteHighlight(id) {
+        return this.request(`/api/v1/highlights/${id}`, {
+            method: 'DELETE'
+        });
+    }
+
+    async getBookmarkHighlights(bookmarkId, params = {}) {
+        const { limit, cursor } = params;
+        const queryParams = {
+            ...(limit && { limit }),
+            ...(cursor && { cursor })
+        };
+        return this.request(`/api/v1/bookmarks/${bookmarkId}/highlights`, { params: queryParams });
     }
 
     // Health Check

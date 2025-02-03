@@ -38,6 +38,7 @@
             <div class="toolbar-actions">
                 <button type="button" id="show-favorites" class="icon-btn" data-tooltip="Show Favorites">⭐</button>
                 <button type="button" id="show-archived" class="icon-btn" data-tooltip="Show Archived">📁</button>
+                <button type="button" id="bulk-ops-btn" class="icon-btn" data-tooltip="Bulk Operations">☐</button>
                 <button type="button" id="export-btn" class="icon-btn" data-tooltip="Export">📥</button>
                 <button type="button" id="settings-btn" class="icon-btn" data-tooltip="Settings">⚙️</button>
             </div>
@@ -193,6 +194,55 @@
     <!-- Loading Overlay -->
     <div id="loading-overlay" class="hidden">
         <div class="spinner"></div>
+    </div>
+
+    <!-- Advanced Search Modal -->
+    <div id="search-modal" class="modal hidden">
+        <div class="modal-content">
+            <h2>Advanced Search</h2>
+            <form id="search-form">
+                <div class="form-group">
+                    <label for="search-query">Search Query</label>
+                    <input type="text" id="search-query" placeholder="Enter search terms...">
+                </div>
+                
+                <div class="form-group">
+                    <label>Date Range</label>
+                    <div class="date-range">
+                        <input type="date" id="date-from" placeholder="From">
+                        <input type="date" id="date-to" placeholder="To">
+                    </div>
+                </div>
+                
+                <div class="form-group">
+                    <label>Tags</label>
+                    <div class="tags-selector" id="search-tags"></div>
+                </div>
+                
+                <div class="form-group">
+                    <label>Lists</label>
+                    <div class="lists-selector" id="search-lists"></div>
+                </div>
+                
+                <div class="form-group">
+                    <label for="sort-by">Sort By</label>
+                    <select id="sort-by">
+                        <option value="createdAt">Created Date</option>
+                        <option value="updatedAt">Updated Date</option>
+                        <option value="title">Title</option>
+                    </select>
+                    <select id="sort-order">
+                        <option value="desc">Descending</option>
+                        <option value="asc">Ascending</option>
+                    </select>
+                </div>
+                
+                <div class="modal-actions">
+                    <button type="button" id="cancel-search-btn">Cancel</button>
+                    <button type="submit">Search</button>
+                </div>
+            </form>
+        </div>
     </div>
 
     <!-- Toast Messages -->
